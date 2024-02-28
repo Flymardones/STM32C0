@@ -1,0 +1,3 @@
+../Core/ws2812/Src/ws2812_spi.c:14:6:WS2812_Send_Spi	56	static
+../Core/ws2812/Src/ws2812_spi.c:31:6:ws2812_send	24	static
+../Core/ws2812/Src/ws2812_spi.c:38:6:ws2812_spi_init	16	static

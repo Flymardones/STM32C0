@@ -1,0 +1,12 @@
+{
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "cmake.configureOnOpen": true,
+  "files.associations": {
+    "ws2812_spi.h": "c",
+    "ws2812.h": "c",
+    "stm32c0xx_it.h": "c",
+    "main.h": "c",
+    "ws2812_pwm.h": "c",
+    "stm32c0xx_hal.h": "c"
+  }
+}
