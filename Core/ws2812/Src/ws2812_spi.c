@@ -67,7 +67,7 @@ void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
     }
     else {
         HAL_SPI_Transmit(ws2812_conf->handle, send_data, sizeof(send_data), HAL_MAX_DELAY);
-		ws2812_delay_us(240);
+		ws2812_delay_us(50);
     }
 	
 }
