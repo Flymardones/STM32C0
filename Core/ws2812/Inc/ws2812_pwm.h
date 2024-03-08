@@ -10,4 +10,8 @@
 #include "ws2812.h"
 
 
+void ws2812_pwm_send(ws2812_configuration* ws2812_conf);
+
+void ws2812_pwm_init(ws2812_configuration* ws2812_conf);
+
 #endif /* WS2812_INC_WS2812_PWM_H_ */

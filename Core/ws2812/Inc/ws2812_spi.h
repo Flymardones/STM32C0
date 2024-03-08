@@ -10,6 +10,7 @@
 
 #include "ws2812.h"
 
+extern ws2812_configuration ws2812_spi;
 
 void ws2812_spi_init(ws2812_configuration* ws2812_conf);
 

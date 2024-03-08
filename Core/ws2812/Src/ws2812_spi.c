@@ -46,13 +46,15 @@ void ws2812_spi_send_single(ws2812_configuration* ws2812_conf) {
 
 #pragma GCC optimize ("O3")
 void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
+	
 	uint8_t (*led_data)[3] = (uint8_t(*)[3])ws2812_conf->buffer;
 	uint8_t send_data[ws2812_conf->led_num * 24];
+	uint8_t green, red, blue;
     
 	for (int i = 0; i < ws2812_conf->led_num; i++) {
-        uint8_t green = led_data[i][0] * ws2812_conf->brightness / 100;
-        uint8_t red = led_data[i][1] * ws2812_conf->brightness / 100;
-        uint8_t blue = led_data[i][2] * ws2812_conf->brightness / 100;
+        green = led_data[i][0] * ws2812_conf->brightness / 100;
+        red = led_data[i][1] * ws2812_conf->brightness / 100;
+        blue = led_data[i][2] * ws2812_conf->brightness / 100;
 
         for (int j = 0; j < 8; j++) {
 			send_data[i * 24 + j] = (green & (1 << j)) ? 0b110 : 0b100;
@@ -63,7 +65,8 @@ void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
 
     if (ws2812_conf->dma) {
         HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, sizeof(send_data));
-		// ws2812_delay_us(300);
+		// datasentflag = 1;
+		// ws2812_delay_us(50);
     }
     else {
         HAL_SPI_Transmit(ws2812_conf->handle, send_data, sizeof(send_data), HAL_MAX_DELAY);

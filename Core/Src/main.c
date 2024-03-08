@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ws2812_spi.h"
+#include "ws2812_pwm.h"
+#include "ws2812_uart.h"
 #include "string.h"
 /* USER CODE END Includes */
 
@@ -50,6 +52,8 @@ TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 DMA_HandleTypeDef hdma_tim1_ch1;
 
+UART_HandleTypeDef huart1;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -62,6 +66,7 @@ static void MX_ADC1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -69,13 +74,29 @@ static void MX_TIM3_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-/* Configuration for SPI */
+
+
 ws2812_configuration ws2812_spi = {
       .handle = &hspi1,
       .led_num = 25,
-      .brightness = 50,
+      .brightness = 100,
+      .dma = 1
+};
+
+ws2812_configuration ws2812_pwm = {
+      .handle = &htim1,
+      .led_num = 25,
+      .brightness = 100,
+      .dma = 1
+};
+
+ws2812_configuration ws2812_uart = {
+      .handle = &huart1,
+      .led_num = 25,
+      .brightness = 100,
       .dma = 0
 };
+
 
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
@@ -83,13 +104,32 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 
     // Check if this is the SPI peripheral we're interested in
     if (hspi == ws2812_spi.handle) {
-        ws2812_delay_us(100);
+        ws2812_delay_us(80);
         ws2812_spi_send(&ws2812_spi);
+        // datasentflag = 0;
     }
 }
 
 
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
+    // This function will be called when a PWM pulse is finished
 
+    // Check if this is the TIM peripheral we're interested in
+    if (htim == ws2812_pwm.handle) {
+        ws2812_delay_us(80);
+        ws2812_pwm_send(&ws2812_pwm);
+    }
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+    // This function will be called when a UART transmit is complete
+
+    // Check if this is the UART peripheral we're interested in
+    if (huart == ws2812_uart.handle) {
+        ws2812_delay_us(80);
+        ws2812_uart_send(&ws2812_uart);
+    }
+}
 
 /* USER CODE END 0 */
 
@@ -126,6 +166,7 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -136,10 +177,33 @@ int main(void)
   
 
   // Reset LEDs
-  ws2812_spi_init(&ws2812_spi);
+  // ws2812_spi_init(&ws2812_spi);
 
-  ws2812_set_led(&ws2812_spi, 0, 0, 255, 0);
+  // for (int i = 0; i < ws2812_spi.led_num; i++) {
+  //   ws2812_set_led(&ws2812_spi, i, 0, 255, 0);
+  // }
+  // ws2812_set_led(&ws2812_spi, 0, 0, 255, 0);
+  // ws2812_pwm_init(&ws2812_pwm);
+
+  // for (int i = 0; i < ws2812_pwm.led_num; i++) {
+  //   ws2812_set_led(&ws2812_pwm, i, 0, 255, 0);
+  // }
+
+  // ws2812_uart_init(&ws2812_uart);
+
+
+  // ws2812_set_led(&ws2812_uart, 0, 0, 255, 0);
+
+
  
+  // ws2812_pwm_send(&ws2812_pwm);
+
+  ws2812_uart_init(&ws2812_uart);
+
+  ws2812_set_led(&ws2812_uart, 0, 0, 255, 0);
+
+
+  
 
   
 
@@ -148,22 +212,16 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
+    // ws2812_uart_send(&ws2812_uart);
     // ws2812_spi_send_single(&ws2812_spi);
-    ws2812_spi_send(&ws2812_spi);
-    
-    // turn on all the leds
-    // for (int i = 0; i < ws2812_spi.led_num; i++) {
-    //   ws2812_set_led(&ws2812_spi, i, 0, 0, 255);
-    //   ws2812_spi_send(&ws2812_spi);
-    //   HAL_Delay(100);
-    // }
+    // ws2812_spi_send(&ws2812_spi);
 
-    // for (int i = ws2812_spi.led_num; i >= 0; i--) {
-    //   ws2812_set_led(&ws2812_spi, i, 0, 0, 0);
-    //   ws2812_spi_send(&ws2812_spi);
-    //   HAL_Delay(100);
-    // }
+    // change between red green and blue
+  ws2812_uart_send(&ws2812_uart);
+
+
+
+
 
 
   
@@ -385,7 +443,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM1_Init 2 */
-  HAL_TIM_Base_Start(&htim1);
+
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
 
@@ -410,7 +468,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 48;
+  htim3.Init.Prescaler = 48 - 1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -434,6 +492,55 @@ static void MX_TIM3_Init(void)
 
   HAL_TIM_Base_Start(&htim3);
   /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
+  huart1.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
+  if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -488,14 +595,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF1_USART2;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA9 PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF1_USART1;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LED_Pin */

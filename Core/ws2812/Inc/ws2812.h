@@ -55,6 +55,7 @@ typedef struct {
 /*!
  * @brief Set the RGB value of a single LED
  *
+ * @param ws2812_conf the ws2812 configuration
  * @param led the led number to set
  * @param red the red value (0-255)
  * @param green the green value (0-255)
