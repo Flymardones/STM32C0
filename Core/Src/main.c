@@ -55,7 +55,7 @@ DMA_HandleTypeDef hdma_tim1_ch1;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-
+volatile uint8_t datasentflag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -79,23 +79,18 @@ static void MX_USART1_UART_Init(void);
 ws2812_configuration ws2812_spi = {
       .handle = &hspi1,
       .led_num = 25,
-      .brightness = 100,
+      .brightness = 50,
       .dma = 1
 };
 
 ws2812_configuration ws2812_pwm = {
       .handle = &htim1,
       .led_num = 25,
-      .brightness = 100,
-      .dma = 1
-};
-
-ws2812_configuration ws2812_uart = {
-      .handle = &huart1,
-      .led_num = 25,
-      .brightness = 100,
+      .brightness = 50,
       .dma = 0
 };
+
+
 
 
 
@@ -103,11 +98,11 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     // This function will be called when a SPI transmit via DMA is complete
 
     // Check if this is the SPI peripheral we're interested in
-    if (hspi == ws2812_spi.handle) {
-        ws2812_delay_us(80);
-        ws2812_spi_send(&ws2812_spi);
-        // datasentflag = 0;
-    }
+    // if (hspi == ws2812_spi.handle) {
+
+    //     datasentflag = 1;
+
+    // }
 }
 
 
@@ -116,20 +111,16 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
 
     // Check if this is the TIM peripheral we're interested in
     if (htim == ws2812_pwm.handle) {
-        ws2812_delay_us(80);
-        ws2812_pwm_send(&ws2812_pwm);
+
+        datasentflag = 1;
+
+
     }
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-    // This function will be called when a UART transmit is complete
 
-    // Check if this is the UART peripheral we're interested in
-    if (huart == ws2812_uart.handle) {
-        ws2812_delay_us(80);
-        ws2812_uart_send(&ws2812_uart);
-    }
-}
+
+
 
 /* USER CODE END 0 */
 
@@ -176,36 +167,21 @@ int main(void)
 
   
 
-  // Reset LEDs
-  // ws2812_spi_init(&ws2812_spi);
+  ws2812_pwm_init(&ws2812_pwm);
+
+  for (int i = 0; i < ws2812_pwm.led_num; i++) {
+    ws2812_set_led(&ws2812_pwm, i, 0, 255, 0);
+  }
+
+
+
+  //ws2812_pwm_send(&ws2812_pwm);
+
+  //ws2812_spi_init(&ws2812_spi);
 
   // for (int i = 0; i < ws2812_spi.led_num; i++) {
-  //   ws2812_set_led(&ws2812_spi, i, 0, 255, 0);
-  // }
-  // ws2812_set_led(&ws2812_spi, 0, 0, 255, 0);
-  // ws2812_pwm_init(&ws2812_pwm);
-
-  // for (int i = 0; i < ws2812_pwm.led_num; i++) {
-  //   ws2812_set_led(&ws2812_pwm, i, 0, 255, 0);
-  // }
-
-  // ws2812_uart_init(&ws2812_uart);
-
-
-  // ws2812_set_led(&ws2812_uart, 0, 0, 255, 0);
-
-
- 
-  // ws2812_pwm_send(&ws2812_pwm);
-
-  ws2812_uart_init(&ws2812_uart);
-
-  ws2812_set_led(&ws2812_uart, 0, 0, 255, 0);
-
-
-  
-
-  
+  //   ws2812_set_led(&ws2812_spi, i, 255, 0, 0);
+  // }  
 
   while (1)
   {
@@ -214,12 +190,14 @@ int main(void)
     /* USER CODE BEGIN 3 */
     // ws2812_uart_send(&ws2812_uart);
     // ws2812_spi_send_single(&ws2812_spi);
-    // ws2812_spi_send(&ws2812_spi);
+    //ws2812_spi_send_single(&ws2812_spi);
 
     // change between red green and blue
-  ws2812_uart_send(&ws2812_uart);
 
+    ws2812_pwm_send_single(&ws2812_pwm);
 
+    // ws2812_spi_send(&ws2812_spi);
+    HAL_Delay(50);
 
 
 
@@ -345,7 +323,7 @@ static void MX_SPI1_Init(void)
   /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_1LINE;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
@@ -390,7 +368,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 48-1;
+  htim1.Init.Period = 60-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -443,7 +421,17 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM1_Init 2 */
+  if (!ws2812_pwm.dma) {
+    //TIM1->CR1 |= TIM_CR1_OPM;
+    //TIM1->CCMR1 |= TIM_CCMR1_OC1FE;
+    //HAL_TIM_OnePulse_Start(&htim1, TIM_CHANNEL_1);
 
+    //TIM1->CR1 |= TIM_CR1_ARPE;
+    //TIM1->CCMR1 |= TIM_CCMR1_OC1PE;
+    //TIM1->DIER |= TIM_DIER_UIE;
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  }
+  
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
 
@@ -515,7 +503,7 @@ static void MX_USART1_UART_Init(void)
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX;
+  huart1.Init.Mode = UART_MODE_RX;
   huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
   huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;

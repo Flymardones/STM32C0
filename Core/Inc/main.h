@@ -69,7 +69,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
-extern uint8_t datasentflag;
+extern SPI_HandleTypeDef hspi1;
+extern volatile uint8_t datasentflag;
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
