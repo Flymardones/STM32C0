@@ -22,20 +22,20 @@ void ws2812_pwm_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
 
 	uint16_t send_data[24];
 
-    // if (ws2812_conf->dma) {
+    if (ws2812_conf->dma) {
         for (int i = 0; i < 8; i++) {
-            send_data[i] = (green & (1 << i)) ? 36 : 16;
-            send_data[i + 8] = (red & (1 << i)) ? 36 : 16;
-            send_data[i + 16] = (blue & (1 << i)) ? 36 : 16;
+            send_data[i] = (green & (1 << (7 - i))) ? 36 : 16;
+            send_data[i + 8] = (red & (1 << (7 - i))) ? 36 : 16;
+            send_data[i + 16] = (blue & (1 << (7 - i))) ? 36 : 16;
         }
-    // }
-    // else {
-    //     for (int i = 0; i < 8; i++) {
-    //         send_data[i] = (green & (1 << i)) ? 24 : 8;
-    //         send_data[i + 8] = (red & (1 << i)) ? 24 : 8;
-    //         send_data[i + 16] = (blue & (1 << i)) ? 24 : 8;
-    //     }
-    // }
+    }
+    else {
+        for (int i = 0; i < 8; i++) {
+            send_data[i] = (green & (1 << (7 - i))) ? 20 : 44;
+            send_data[i + 8] = (red & (1 << (7 - i))) ? 20 : 44;
+            send_data[i + 16] = (blue & (1 << (7 - i))) ? 20 : 44;
+        }
+     }
 
 
 	if (ws2812_conf->dma) {
@@ -44,22 +44,12 @@ void ws2812_pwm_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
         datasentflag = 0;
 	}
 	else {
-        TIM1->CR1 |= TIM_CR1_CEN;
-
         for (int i = 0; i < 24; i++) {
-
-           
-            while(!(TIM1->SR & TIM_SR_UIF)) {};
-            
             TIM1->CCR1 = send_data[i];
-            TIM1->SR &= ~TIM_SR_UIF;
-
-
-
-
+            TIM1->CR1 |= TIM_CR1_CEN;
+            while(!(TIM1->SR & TIM_SR_CC1IF)) {}; // Wait for the update event
+            TIM1->SR &= ~TIM_SR_CC1IF; // Clear the update event flag
         }
-        TIM1->CCR1 = 0;
-        TIM1->CR1 &= ~TIM_CR1_CEN;
 	}
 }
 
@@ -70,7 +60,6 @@ void ws2812_pwm_send_single(ws2812_configuration* ws2812_conf) {
         ws2812_pwm_data(ws2812_conf, led_data[i][0],led_data[i][1],led_data[i][2]);
     }
 
-    //__HAL_TIM_DISABLE(&htim1);
     ws2812_delay_us(280);
 }
 
@@ -87,11 +76,23 @@ void ws2812_pwm_send(ws2812_configuration* ws2812_conf) {
         red = led_data[i][1] * ws2812_conf->brightness / 100;
         blue = led_data[i][2] * ws2812_conf->brightness / 100;
 
-        for (int j = 0; j < 8; j++) {
-            int index = i * 24 + j;
-			send_data[index] = (green & (1 << j)) ? 36 : 16;
-			send_data[index + 8] = (red & (1 << j)) ? 36 : 16;
-			send_data[index + 16] = (blue & (1 << j)) ? 36 : 16;
+        if (ws2812_conf->dma) {
+            for (int j = 0; j < 8; j++) {
+                int index = i * 24 + j;
+                send_data[index] = (green & (1 << (7 - j))) ? 36 : 16;
+                send_data[index + 8] = (red & (1 << (7 - j))) ? 36 : 16;
+                send_data[index + 16] = (blue & (1 << (7 - j))) ? 36 : 16;
+            }
+
+
+        }
+        else {
+            for (int j = 0; j < 8; j++) {
+                int index = i * 24 + j;
+                send_data[index] = (green & (1 << (7 - j))) ? 20 : 44;
+                send_data[index + 8] = (red & (1 << (7 - j))) ? 20 : 44;
+                send_data[index + 16] = (blue & (1 << (7 - j))) ? 20 : 44;
+            }
         }
     }
 
@@ -101,24 +102,14 @@ void ws2812_pwm_send(ws2812_configuration* ws2812_conf) {
         datasentflag = 0;
     }
     else {
-        //TIM1->CCR1 = (uint32_t)send_data[0];
-        TIM1->CR1 |= TIM_CR1_CEN;
+
 
         for (int i = 0; i < (ws2812_conf->led_num * 24); i++) {
-            
-            while(!(TIM1->SR & TIM_SR_UIF)) {};
             TIM1->CCR1 = send_data[i];
-            TIM1->SR &= ~TIM_SR_UIF;
-            
-
-            //TIM1->CR1 |= TIM_CR1_CEN;
-            //IM1->CCR1 = (uint32_t)send_data[i];
-            //TIM1->CR1 |= TIM_CR1_CEN;
-
+            TIM1->CR1 |= TIM_CR1_CEN;
+            while(!(TIM1->SR & TIM_SR_UIF)) {}; // Wait for the update event
+            TIM1->SR &= ~TIM_SR_UIF; // Clear the update event flag
         }
-        TIM1->CCR1 = 0;
-        TIM1->CR1 &= ~TIM_CR1_CEN;
-        
     }
     ws2812_delay_us(280);
 

@@ -170,7 +170,7 @@ int main(void)
   ws2812_pwm_init(&ws2812_pwm);
 
   for (int i = 0; i < ws2812_pwm.led_num; i++) {
-    ws2812_set_led(&ws2812_pwm, i, 0, 255, 0);
+    ws2812_set_led(&ws2812_pwm, i, 255, 0, 0);
   }
 
 
@@ -422,14 +422,10 @@ static void MX_TIM1_Init(void)
   }
   /* USER CODE BEGIN TIM1_Init 2 */
   if (!ws2812_pwm.dma) {
-    //TIM1->CR1 |= TIM_CR1_OPM;
-    //TIM1->CCMR1 |= TIM_CCMR1_OC1FE;
-    //HAL_TIM_OnePulse_Start(&htim1, TIM_CHANNEL_1);
-
-    //TIM1->CR1 |= TIM_CR1_ARPE;
-    //TIM1->CCMR1 |= TIM_CCMR1_OC1PE;
-    //TIM1->DIER |= TIM_DIER_UIE;
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+    TIM1->CR1 |= TIM_CR1_OPM;
+    TIM1->CCER |= TIM_CCER_CC1P;
+    TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE;
+    HAL_TIM_OnePulse_Start(&htim1, TIM_CHANNEL_1);
   }
   
   /* USER CODE END TIM1_Init 2 */
