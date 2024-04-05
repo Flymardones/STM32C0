@@ -34,7 +34,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define SPI 1
+#define PWM 0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,9 +54,11 @@ TIM_HandleTypeDef htim3;
 DMA_HandleTypeDef hdma_tim1_ch1;
 
 UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
 volatile uint8_t datasentflag = 0;
+uint8_t rxBuff[RX_BUFF_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,12 +79,7 @@ static void MX_USART1_UART_Init(void);
 
 
 
-ws2812_configuration ws2812_spi = {
-      .handle = &hspi1,
-      .led_num = 25,
-      .brightness = 50,
-      .dma = 1
-};
+ws2812_configuration ws2812_spi;
 
 ws2812_configuration ws2812_pwm = {
       .handle = &htim1,
@@ -118,6 +116,30 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
     }
 }
 
+// void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+//     // This function will be called when a UART receive is complete
+
+//     // Check if this is the UART peripheral we're interested in
+//     if (huart == &huart1) {
+
+//       HAL_UART_Receive_DMA(&huart1, rxBuff, RX_BUFF_SIZE);
+
+//     }
+// }
+
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
+    // This function will be called when a UART receive event is complete
+
+    // Check if this is the UART peripheral we're interested in
+    if (huart == &huart1) {
+
+      ws2812_uart_commands(rxBuff, Size);
+      HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rxBuff, RX_BUFF_SIZE);
+
+    }
+}
+
 
 
 
@@ -140,7 +162,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -159,44 +181,51 @@ int main(void)
   MX_TIM3_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rxBuff, RX_BUFF_SIZE);
+  __HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
   
+  #if SPI 
+  //ws2812_spi_init(&ws2812_spi);
 
+  // for (int i = 0; i < ws2812_spi.led_num; i++) {
+  //   ws2812_set_led(&ws2812_spi, i, 255, 0, 0);
+  // }
+
+  #endif
+
+
+  #if PWM
   ws2812_pwm_init(&ws2812_pwm);
 
   for (int i = 0; i < ws2812_pwm.led_num; i++) {
     ws2812_set_led(&ws2812_pwm, i, 255, 0, 0);
   }
+  #endif
 
 
-
-  //ws2812_pwm_send(&ws2812_pwm);
-
-  //ws2812_spi_init(&ws2812_spi);
-
-  // for (int i = 0; i < ws2812_spi.led_num; i++) {
-  //   ws2812_set_led(&ws2812_spi, i, 255, 0, 0);
-  // }  
 
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // ws2812_uart_send(&ws2812_uart);
-    // ws2812_spi_send_single(&ws2812_spi);
-    //ws2812_spi_send_single(&ws2812_spi);
 
-    // change between red green and blue
 
-    ws2812_pwm_send_single(&ws2812_pwm);
+    #if SPI
+      //ws2812_spi_send(&ws2812_spi);
+    #endif
 
-    // ws2812_spi_send(&ws2812_spi);
+
+    #if PWM
+      ws2812_pwm_send_single(&ws2812_pwm);
+    #endif
+
+
     HAL_Delay(50);
 
 
@@ -495,18 +524,17 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 9600;
+  huart1.Init.BaudRate = 115200;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_RX;
+  huart1.Init.Mode = UART_MODE_TX_RX;
   huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
   huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
-  huart1.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
-  if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
   {
     Error_Handler();
   }

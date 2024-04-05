@@ -67,10 +67,13 @@ void Error_Handler(void);
 #define LED_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define RX_BUFF_SIZE 512
+
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
 extern SPI_HandleTypeDef hspi1;
 extern volatile uint8_t datasentflag;
+extern uint8_t rxBuff[RX_BUFF_SIZE];
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

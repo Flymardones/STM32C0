@@ -10,9 +10,7 @@
 
 #include "ws2812.h"
 
-void ws2812_uart_init(ws2812_configuration* ws2812_conf);
-
-void ws2812_uart_send(ws2812_configuration* ws2812_conf);
+void ws2812_uart_commands(uint8_t* data, uint16_t size);
 
 
 #endif /* WS2812_INC_WS2812_UART_H_ */

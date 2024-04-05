@@ -45,7 +45,7 @@ void ws2812_spi_send_single(ws2812_configuration* ws2812_conf) {
 }
 
 
-#pragma GCC optimize ("O3")
+//#pragma GCC optimize ("O3")
 void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
 	
 	uint8_t (*led_data)[3] = (uint8_t(*)[3])ws2812_conf->buffer;
@@ -67,8 +67,6 @@ void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
 
     if (ws2812_conf->dma) {
         HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, sizeof(send_data));
-		// while(!datasentflag){};
-		// datasentflag = 0;
 		while(__HAL_SPI_GET_FLAG(&hspi1, SPI_FLAG_BSY ));
 		
 
