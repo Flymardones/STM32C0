@@ -100,7 +100,6 @@ target_sources(
     "Core\\Src\\sysmem.c"
     "Core\\Src\\system_stm32c0xx.c"
     "Core\\Startup\\startup_stm32c011f6ux.s"
-    "Core\\ws2812\\Src\\ws2812_i2c.c"
     "Core\\ws2812\\Src\\ws2812_pwm.c"
     "Core\\ws2812\\Src\\ws2812_spi.c"
     "Core\\ws2812\\Src\\ws2812_uart.c"

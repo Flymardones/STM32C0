@@ -10,6 +10,7 @@
     "ws2812_pwm.h": "c",
     "stm32c0xx_hal.h": "c",
     "string.h": "c",
-    "ws2812_uart.h": "c"
+    "ws2812_uart.h": "c",
+    "stdlib.h": "c"
   }
 }

@@ -21,10 +21,17 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "ws2812_spi.h"
-#include "ws2812_pwm.h"
 #include "ws2812_uart.h"
 #include "string.h"
+
+#if SPI
+#include "ws2812_spi.h"
+#endif
+
+#if PWM
+#include "ws2812_pwm.h"
+#endif
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,8 +41,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SPI 1
-#define PWM 0
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -78,20 +84,19 @@ static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN 0 */
 
 
-
+#if SPI
 ws2812_configuration ws2812_spi;
+#endif
 
-ws2812_configuration ws2812_pwm = {
-      .handle = &htim1,
-      .led_num = 25,
-      .brightness = 50,
-      .dma = 0
-};
+#if PWM
+ws2812_configuration ws2812_pwm;
+#endif
 
-
-
+uint8_t fade_flag = 0;
+uint16_t fade_time = 0;
 
 
+#if SPI
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     // This function will be called when a SPI transmit via DMA is complete
 
@@ -102,8 +107,9 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 
     // }
 }
+#endif
 
-
+#if PWM
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
     // This function will be called when a PWM pulse is finished
 
@@ -115,7 +121,7 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
 
     }
 }
-
+#endif
 // void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 //     // This function will be called when a UART receive is complete
 
@@ -162,7 +168,15 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  
+  #if SPI 
+  ws2812_spi.dma = 1;
+
+  #endif
+
+
+  #if PWM
+  ws2812_pwm.dma = 0;
+  #endif
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -173,9 +187,9 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init();
+ // MX_GPIO_Init();
   MX_DMA_Init();
-  MX_ADC1_Init();
+  // MX_ADC1_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
@@ -188,26 +202,6 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  
-  #if SPI 
-  //ws2812_spi_init(&ws2812_spi);
-
-  // for (int i = 0; i < ws2812_spi.led_num; i++) {
-  //   ws2812_set_led(&ws2812_spi, i, 255, 0, 0);
-  // }
-
-  #endif
-
-
-  #if PWM
-  ws2812_pwm_init(&ws2812_pwm);
-
-  for (int i = 0; i < ws2812_pwm.led_num; i++) {
-    ws2812_set_led(&ws2812_pwm, i, 255, 0, 0);
-  }
-  #endif
-
-
 
   while (1)
   {
@@ -218,15 +212,21 @@ int main(void)
 
     #if SPI
       //ws2812_spi_send(&ws2812_spi);
+      if (fade_flag) {
+        ws2812_spi_fade(&ws2812_spi, fade_time);
+      }
+
     #endif
 
 
     #if PWM
-      ws2812_pwm_send_single(&ws2812_pwm);
+      if (fade_flag) {
+        ws2812_pwm_fade(&ws2812_pwm, fade_time);
+      }
     #endif
 
 
-    HAL_Delay(50);
+    //HAL_Delay(50);
 
 
 
@@ -450,12 +450,14 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM1_Init 2 */
+  #if PWM
   if (!ws2812_pwm.dma) {
     TIM1->CR1 |= TIM_CR1_OPM;
     TIM1->CCER |= TIM_CCER_CC1P;
     TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE;
     HAL_TIM_OnePulse_Start(&htim1, TIM_CHANNEL_1);
   }
+  #endif
   
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);

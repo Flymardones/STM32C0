@@ -31,7 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -67,13 +67,27 @@ void Error_Handler(void);
 #define LED_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define SPI 0
+#define PWM 1
 #define RX_BUFF_SIZE 512
 
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim3;
+#if SPI
+
+#endif
+
 extern SPI_HandleTypeDef hspi1;
+
+
+#if PWM
+extern TIM_HandleTypeDef htim1;
+#endif
+
+extern TIM_HandleTypeDef htim3;
+
 extern volatile uint8_t datasentflag;
 extern uint8_t rxBuff[RX_BUFF_SIZE];
+extern uint8_t fade_flag;
+extern uint16_t fade_time;
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
