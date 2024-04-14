@@ -125,10 +125,21 @@ bool ws2812_spi_init(ws2812_configuration* ws2812_conf) {
 	return 1;
 }
 
+void ws2812_spi_clear(ws2812_configuration* ws2812_conf) {
+    for (int i = 0; i < ws2812_conf->led_num; i++) {
+        ws2812_set_led(ws2812_conf, i, 0, 0, 0);
+    }
+	ws2812_spi_send(ws2812_conf);
+}
+
 void ws2812_spi_deinit(ws2812_configuration* ws2812_conf) {
 
 	free(ws2812_conf->buffer);
 	ws2812_conf->buffer = NULL;
+	ws2812_conf->handle = NULL;
+	ws2812_conf->led_num = 0;
+	ws2812_conf->brightness = 0;
+	ws2812_conf->dma = 0;
 }
 
 

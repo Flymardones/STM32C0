@@ -76,11 +76,10 @@ void Error_Handler(void);
 #endif
 
 extern SPI_HandleTypeDef hspi1;
-
-
-#if PWM
 extern TIM_HandleTypeDef htim1;
-#endif
+
+extern void MX_SPI1_Init(void);
+extern void MX_TIM1_Init(void);
 
 extern TIM_HandleTypeDef htim3;
 
