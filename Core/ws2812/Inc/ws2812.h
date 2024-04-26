@@ -16,6 +16,11 @@ typedef enum {
     ws2812_dma_error,
 } ws2812_status_t;
 
+typedef enum {
+    GREEN,
+    RED,
+    BLUE,
+} ws2812_color_t;
 
 typedef struct {
 

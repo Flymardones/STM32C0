@@ -11,7 +11,7 @@
 
 extern ws2812_configuration ws2812_pwm;
 
-void ws2812_pwm_send(ws2812_configuration* ws2812_conf, uint8_t brightness);
+void ws2812_pwm_send(ws2812_configuration* ws2812_conf);
 
 bool ws2812_pwm_init(ws2812_configuration* ws2812_conf);
 

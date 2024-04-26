@@ -69,7 +69,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 #define SPI 0
 #define PWM 1
-#define RX_BUFF_SIZE 512
+#define RX_BUFF_SIZE 256
 
 #if SPI
 

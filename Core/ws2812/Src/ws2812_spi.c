@@ -11,6 +11,37 @@
 #include "stdlib.h"
 
 
+void ws2812_spi_adjust_brightness(ws2812_configuration* ws2812_conf, uint8_t brightness) {
+	uint8_t (*led_data)[3] = (uint8_t(*)[3])ws2812_conf->buffer;
+	uint8_t send_data[ws2812_conf->led_num * 24];
+	uint8_t green, red, blue;
+    
+	for (int i = 0; i < ws2812_conf->led_num; i++) {
+        green = led_data[i][GREEN] * brightness / 100;
+        red = led_data[i][RED] * brightness / 100;
+        blue = led_data[i][BLUE] * brightness / 100;
+
+        for (int j = 0; j < 8; j++) {
+			int index = i * 24 + j;
+			send_data[index] = (green & (1 << (7 - j))) ? 0b110 : 0b100;
+			send_data[index + 8] = (red & (1 << (7 - j))) ? 0b110 : 0b100;
+			send_data[index + 16] = (blue & (1 << (7 - j))) ? 0b110 : 0b100;
+        }
+    }
+
+    if (ws2812_conf->dma) {
+        HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, sizeof(send_data));
+		while(__HAL_SPI_GET_FLAG(&hspi1, SPI_FLAG_BSY ));
+		
+
+    }
+    else {
+        HAL_SPI_Transmit(ws2812_conf->handle, send_data, sizeof(send_data), HAL_MAX_DELAY);
+    }
+	ws2812_delay_us(280);
+}
+
+#pragma GCC optimize ("O3")
 void ws2812_spi_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms) {
 
   uint16_t fade_delay = 0;
@@ -23,17 +54,13 @@ void ws2812_spi_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms) {
   
   fade_delay = (fade_time_ms / ws2812_conf->brightness) / 2;
   
-  for (int fade = ws2812_conf->brightness; fade >= 0; fade--) {
-	for (int i = 0; i < ws2812_conf->led_num; i++) {
-	  ws2812_spi_data(ws2812_conf, led_data[i][0], led_data[i][1], led_data[i][2], (uint8_t)fade);
-	}
+  for (int fade = ws2812_conf->brightness; fade >= 0; fade -= 2) {
+	ws2812_spi_adjust_brightness(ws2812_conf, fade);
 	HAL_Delay(fade_delay);
   }
   
-  for (int fade = 0; fade < ws2812_conf->brightness; fade++) {
-	for (int i = 0; i < ws2812_conf->led_num; i++) {
-	  ws2812_spi_data(ws2812_conf, led_data[i][0] , led_data[i][1], led_data[i][2], (uint8_t)fade);
-	}
+  for (int fade = 0; fade < ws2812_conf->brightness; fade += 2) {
+	ws2812_spi_adjust_brightness(ws2812_conf, fade);
 	HAL_Delay(fade_delay);
   }
 
@@ -68,7 +95,7 @@ void ws2812_spi_send_single(ws2812_configuration* ws2812_conf) {
 	uint8_t (*led_data)[3] = (uint8_t(*)[3])ws2812_conf->buffer;
 
 	for (int i = 0; i < ws2812_conf->led_num; i++) {
-		ws2812_spi_data(ws2812_conf, led_data[i][0], led_data[i][1], led_data[i][2], ws2812_conf->brightness);
+		ws2812_spi_data(ws2812_conf, led_data[i][GREEN], led_data[i][RED], led_data[i][BLUE], ws2812_conf->brightness);
 	}
     ws2812_delay_us(280);
 }
@@ -82,9 +109,9 @@ void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
 	uint8_t green, red, blue;
     
 	for (int i = 0; i < ws2812_conf->led_num; i++) {
-        green = led_data[i][0] * ws2812_conf->brightness / 100;
-        red = led_data[i][1] * ws2812_conf->brightness / 100;
-        blue = led_data[i][2] * ws2812_conf->brightness / 100;
+        green = led_data[i][GREEN] * ws2812_conf->brightness / 100;
+        red = led_data[i][RED] * ws2812_conf->brightness / 100;
+        blue = led_data[i][BLUE] * ws2812_conf->brightness / 100;
 
         for (int j = 0; j < 8; j++) {
 			int index = i * 24 + j;
@@ -122,7 +149,7 @@ bool ws2812_spi_init(ws2812_configuration* ws2812_conf) {
 	// Set all leds to 0
     ws2812_spi_send(ws2812_conf);
 
-	return 1;
+	return true;
 }
 
 void ws2812_spi_clear(ws2812_configuration* ws2812_conf) {

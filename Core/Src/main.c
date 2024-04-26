@@ -174,7 +174,7 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   #if SPI 
-  ws2812_spi.dma = 0;
+  ws2812_spi.dma = 1;
   #endif
 
 
@@ -223,6 +223,9 @@ int main(void)
       if (fade_flag) {
         ws2812_spi_fade(&ws2812_spi, fade_time);
       }
+      else {
+        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+      }
 
     #endif
 
@@ -231,8 +234,11 @@ int main(void)
       if (fade_flag) {
         ws2812_pwm_fade(&ws2812_pwm, fade_time);
       }
+      else {
+        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+      }
     #endif
-
+    
     // Check if the DMA has gotten data from UART
     if (uartData.dataReceived) {
       ws2812_uart_commands(rxBuff, uartData.dataSize);
