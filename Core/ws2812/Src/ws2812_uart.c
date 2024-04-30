@@ -19,6 +19,7 @@
 #include "ws2812_pwm.h"
 #endif
 
+#define MAX_COMMAND_SIZE 10
 
 
 uint8_t initialized = 0;
@@ -26,7 +27,7 @@ uint8_t initialized = 0;
 void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
     char *token;
-    char *tokenizedInput[10];
+    char *tokenizedInput[MAX_COMMAND_SIZE];
     int i = 0;
 
 
@@ -48,6 +49,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_spi.led_num = atoi(tokenizedInput[1]);
         ws2812_spi.brightness = atoi(tokenizedInput[2]);
         ws2812_spi.dma = 1;
+        ws2812_spi.ping_pong = true;
     
         if (ws2812_spi_init(&ws2812_spi)) {
             initialized = 1;
@@ -65,6 +67,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_pwm.led_num = atoi(tokenizedInput[1]);
         ws2812_pwm.brightness = atoi(tokenizedInput[2]);
         ws2812_pwm.dma = 0;
+        ws2812_pwm.ping_pong = true;
 
 
         if(ws2812_pwm_init(&ws2812_pwm)) {
@@ -92,38 +95,44 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         for (int i = 0; i < ws2812_spi.led_num; i++) {
             ws2812_set_led(&ws2812_spi, i, atoi(tokenizedInput[1]), atoi(tokenizedInput[2]), atoi(tokenizedInput[3]));
         }
-        ws2812_spi_send(&ws2812_spi);
+        // ws2812_spi_send(&ws2812_spi);
+        ws2812_spi_send_single(&ws2812_spi);
         #endif
 
         #if PWM
         for (int i = 0; i < ws2812_pwm.led_num; i++) {
             ws2812_set_led(&ws2812_pwm, i, atoi(tokenizedInput[1]), atoi(tokenizedInput[2]), atoi(tokenizedInput[3]));
         }
-        ws2812_pwm_send(&ws2812_pwm);
+        // ws2812_pwm_send(&ws2812_pwm);
+        ws2812_pwm_send_single(&ws2812_pwm);
         #endif
 
     }
     else if (strcmp(tokenizedInput[0], "SET_SINGLE") == 0 && initialized) {
         #if SPI
         ws2812_set_led(&ws2812_spi, atoi(tokenizedInput[1]), atoi(tokenizedInput[2]), atoi(tokenizedInput[3]), atoi(tokenizedInput[4]));
-        ws2812_spi_send(&ws2812_spi);
+        // ws2812_spi_send(&ws2812_spi);
+        ws2812_spi_send_single(&ws2812_spi);
         #endif
 
         #if PWM
         ws2812_set_led(&ws2812_pwm, atoi(tokenizedInput[1]), atoi(tokenizedInput[2]), atoi(tokenizedInput[3]), atoi(tokenizedInput[4]));
-        ws2812_pwm_send(&ws2812_pwm);
+        // ws2812_pwm_send(&ws2812_pwm);
+        ws2812_pwm_send_single(&ws2812_pwm);
         #endif
 
     }
     else if (strcmp(tokenizedInput[0], "SET_BRIGHTNESS") == 0 && initialized) {
         #if SPI
         ws2812_spi.brightness = atoi(tokenizedInput[1]);
-        ws2812_spi_send(&ws2812_spi);
+        // ws2812_spi_send(&ws2812_spi);
+        ws2812_spi_send_single(&ws2812_spi);
         #endif
 
         #if PWM
         ws2812_pwm.brightness = atoi(tokenizedInput[1]);
-        ws2812_pwm_send(&ws2812_pwm);
+        // ws2812_pwm_send(&ws2812_pwm);
+        ws2812_pwm_send_single(&ws2812_pwm);
         #endif
     }
     else if (strcmp(tokenizedInput[0], "CLEAR_ALL") == 0 && initialized) {
@@ -131,25 +140,29 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         for (int i = 0; i < ws2812_spi.led_num; i++) {
             ws2812_set_led(&ws2812_spi, i, 0, 0, 0);
         }
-        ws2812_spi_send(&ws2812_spi);
+        // ws2812_spi_send(&ws2812_spi);
+        ws2812_spi_send_single(&ws2812_spi);
         #endif
 
         #if PWM
         for (int i = 0; i < ws2812_pwm.led_num; i++) {
             ws2812_set_led(&ws2812_pwm, i, 0, 0, 0);
         }
-        ws2812_pwm_send(&ws2812_pwm);
+        // ws2812_pwm_send(&ws2812_pwm);
+        ws2812_pwm_send_single(&ws2812_pwm);
         #endif
     }
     else if (strcmp(tokenizedInput[0], "CLEAR_SINGLE") == 0 && initialized) {
         #if SPI
         ws2812_set_led(&ws2812_spi, atoi(tokenizedInput[1]), 0, 0, 0);
-        ws2812_spi_send(&ws2812_spi);
+        // ws2812_spi_send(&ws2812_spi);
+        ws2812_spi_send_single(&ws2812_spi);
         #endif
 
         #if PWM
         ws2812_set_led(&ws2812_pwm, atoi(tokenizedInput[1]), 0, 0, 0);
-        ws2812_pwm_send(&ws2812_pwm);
+        // ws2812_pwm_send(&ws2812_pwm);
+        ws2812_pwm_send_single(&ws2812_pwm);
         #endif
     }
     else if (strcmp(tokenizedInput[0], "START_FADE_ALL") == 0 && initialized) {

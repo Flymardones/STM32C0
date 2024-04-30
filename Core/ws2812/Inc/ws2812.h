@@ -54,6 +54,11 @@ typedef struct {
     */
     uint8_t dma;
 
+    /*
+    * @member ping_pong is used for sending in a ping pong fashion
+    */
+    bool ping_pong;
+
 } ws2812_configuration;
 
 

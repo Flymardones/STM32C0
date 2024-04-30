@@ -59,12 +59,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Button_Pin GPIO_PIN_2
-#define Button_GPIO_Port GPIOF
-#define Joystick_Pin GPIO_PIN_8
-#define Joystick_GPIO_Port GPIOA
-#define LED_Pin GPIO_PIN_6
-#define LED_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 #define SPI 0
@@ -77,9 +71,11 @@ void Error_Handler(void);
 
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim1;
+extern DMA_HandleTypeDef hdma_tim1_ch1;
+extern DMA_HandleTypeDef hdma_spi1_tx;
 
-extern void MX_SPI1_Init(void);
-extern void MX_TIM1_Init(void);
+// extern void MX_SPI1_Init(void);
+// extern void MX_TIM1_Init(void);
 
 extern TIM_HandleTypeDef htim3;
 

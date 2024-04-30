@@ -104,8 +104,6 @@ target_sources(
     "Core\\ws2812\\Src\\ws2812_spi.c"
     "Core\\ws2812\\Src\\ws2812_uart.c"
     "Core\\ws2812\\Src\\ws2812.c"
-    "Drivers\\STM32C0xx_HAL_Driver\\Src\\stm32c0xx_hal_adc_ex.c"
-    "Drivers\\STM32C0xx_HAL_Driver\\Src\\stm32c0xx_hal_adc.c"
     "Drivers\\STM32C0xx_HAL_Driver\\Src\\stm32c0xx_hal_cortex.c"
     "Drivers\\STM32C0xx_HAL_Driver\\Src\\stm32c0xx_hal_dma_ex.c"
     "Drivers\\STM32C0xx_HAL_Driver\\Src\\stm32c0xx_hal_dma.c"
