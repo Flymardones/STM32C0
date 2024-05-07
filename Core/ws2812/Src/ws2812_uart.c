@@ -80,6 +80,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
     else if (strcmp(tokenizedInput[0], "DEINIT") == 0) {
         #if SPI
         ws2812_spi_clear(&ws2812_spi);
+        while(!transferDone){}; // Wait for ongoing transfer to finish
         ws2812_spi_deinit(&ws2812_spi);
         #endif
 

@@ -98,16 +98,16 @@ uint16_t fade_time = 0;
 
 
 #if SPI
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
-    // This function will be called when a SPI transmit via DMA is complete
+// void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
+//     // This function will be called when a SPI transmit via DMA is complete
 
-    // Check if this is the SPI peripheral we're interested in
-    if (hspi == &hspi1) {
+//     // Check if this is the SPI peripheral we're interested in
+//     if (hspi == &hspi1) {
 
-        transferDone = 1;
+//         transferDone = 1;
 
-    }
-}
+//     }
+// }
 #endif
 
 #if PWM
