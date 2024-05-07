@@ -1,2 +1,2 @@
-../Core/ws2812/Src/ws2812.c:15:6:ws2812_set_led	2
-../Core/ws2812/Src/ws2812.c:27:6:ws2812_delay_us	2
+../Core/ws2812/Src/ws2812.c:12:6:ws2812_set_led	2
+../Core/ws2812/Src/ws2812.c:25:6:ws2812_delay_us	2

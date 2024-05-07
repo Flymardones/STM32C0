@@ -31,7 +31,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
     int i = 0;
 
 
-    token = strtok(data, ",");
+    token = strtok((char*)data, ",");
     while (token != NULL) {
         tokenizedInput[i++] = token;
         token = strtok(NULL, ",");
@@ -66,7 +66,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_pwm.handle = &htim1;
         ws2812_pwm.led_num = atoi(tokenizedInput[1]);
         ws2812_pwm.brightness = atoi(tokenizedInput[2]);
-        ws2812_pwm.dma = 0;
+        ws2812_pwm.dma = 1;
         ws2812_pwm.ping_pong = true;
 
 
@@ -85,6 +85,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
         #if PWM
         ws2812_pwm_clear(&ws2812_pwm);
+        while(!transferDone){}; // Wait for ongoing transfer to finish
         ws2812_pwm_deinit(&ws2812_pwm);
         #endif
         initialized = 0;

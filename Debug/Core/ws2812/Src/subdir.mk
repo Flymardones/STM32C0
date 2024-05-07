@@ -6,21 +6,18 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Core/ws2812/Src/ws2812.c \
-../Core/ws2812/Src/ws2812_i2c.c \
 ../Core/ws2812/Src/ws2812_pwm.c \
 ../Core/ws2812/Src/ws2812_spi.c \
 ../Core/ws2812/Src/ws2812_uart.c 
 
 OBJS += \
 ./Core/ws2812/Src/ws2812.o \
-./Core/ws2812/Src/ws2812_i2c.o \
 ./Core/ws2812/Src/ws2812_pwm.o \
 ./Core/ws2812/Src/ws2812_spi.o \
 ./Core/ws2812/Src/ws2812_uart.o 
 
 C_DEPS += \
 ./Core/ws2812/Src/ws2812.d \
-./Core/ws2812/Src/ws2812_i2c.d \
 ./Core/ws2812/Src/ws2812_pwm.d \
 ./Core/ws2812/Src/ws2812_spi.d \
 ./Core/ws2812/Src/ws2812_uart.d 
@@ -33,7 +30,7 @@ Core/ws2812/Src/%.o Core/ws2812/Src/%.su Core/ws2812/Src/%.cyclo: ../Core/ws2812
 clean: clean-Core-2f-ws2812-2f-Src
 
 clean-Core-2f-ws2812-2f-Src:
-	-$(RM) ./Core/ws2812/Src/ws2812.cyclo ./Core/ws2812/Src/ws2812.d ./Core/ws2812/Src/ws2812.o ./Core/ws2812/Src/ws2812.su ./Core/ws2812/Src/ws2812_i2c.cyclo ./Core/ws2812/Src/ws2812_i2c.d ./Core/ws2812/Src/ws2812_i2c.o ./Core/ws2812/Src/ws2812_i2c.su ./Core/ws2812/Src/ws2812_pwm.cyclo ./Core/ws2812/Src/ws2812_pwm.d ./Core/ws2812/Src/ws2812_pwm.o ./Core/ws2812/Src/ws2812_pwm.su ./Core/ws2812/Src/ws2812_spi.cyclo ./Core/ws2812/Src/ws2812_spi.d ./Core/ws2812/Src/ws2812_spi.o ./Core/ws2812/Src/ws2812_spi.su ./Core/ws2812/Src/ws2812_uart.cyclo ./Core/ws2812/Src/ws2812_uart.d ./Core/ws2812/Src/ws2812_uart.o ./Core/ws2812/Src/ws2812_uart.su
+	-$(RM) ./Core/ws2812/Src/ws2812.cyclo ./Core/ws2812/Src/ws2812.d ./Core/ws2812/Src/ws2812.o ./Core/ws2812/Src/ws2812.su ./Core/ws2812/Src/ws2812_pwm.cyclo ./Core/ws2812/Src/ws2812_pwm.d ./Core/ws2812/Src/ws2812_pwm.o ./Core/ws2812/Src/ws2812_pwm.su ./Core/ws2812/Src/ws2812_spi.cyclo ./Core/ws2812/Src/ws2812_spi.d ./Core/ws2812/Src/ws2812_spi.o ./Core/ws2812/Src/ws2812_spi.su ./Core/ws2812/Src/ws2812_uart.cyclo ./Core/ws2812/Src/ws2812_uart.d ./Core/ws2812/Src/ws2812_uart.o ./Core/ws2812/Src/ws2812_uart.su
 
 .PHONY: clean-Core-2f-ws2812-2f-Src
 

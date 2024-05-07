@@ -40,14 +40,14 @@ typedef struct {
     uint8_t brightness;
 
     /*
-    * @member buffer_size is the size of the buffer
+    * @member fade is the fade for the leds
     */
-    size_t buffer_size;
+    int8_t fade;
 
     /*
     * @member buffer is the buffer for storing the data for the leds
     */
-    void* buffer;
+    uint8_t(*led_data)[3];
 
     /*
     * @member dma is used for defining whether the dma should be used of not

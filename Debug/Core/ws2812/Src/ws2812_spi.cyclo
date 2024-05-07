@@ -1,3 +1,8 @@
-../Core/ws2812/Src/ws2812_spi.c:14:6:WS2812_Send_Spi	3
-../Core/ws2812/Src/ws2812_spi.c:31:6:ws2812_send	2
-../Core/ws2812/Src/ws2812_spi.c:38:6:ws2812_spi_init	2
+../Core/ws2812/Src/ws2812_spi.c:15:6:ws2812_spi_adjust_brightness	8
+../Core/ws2812/Src/ws2812_spi.c:46:6:ws2812_spi_fade	7
+../Core/ws2812/Src/ws2812_spi.c:75:6:ws2812_spi_data	12
+../Core/ws2812/Src/ws2812_spi.c:110:6:ws2812_spi_send_single	3
+../Core/ws2812/Src/ws2812_spi.c:125:6:ws2812_spi_send	8
+../Core/ws2812/Src/ws2812_spi.c:158:6:ws2812_spi_init	2
+../Core/ws2812/Src/ws2812_spi.c:177:6:ws2812_spi_clear	2
+../Core/ws2812/Src/ws2812_spi.c:185:6:ws2812_spi_deinit	1

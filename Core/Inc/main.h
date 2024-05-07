@@ -79,7 +79,7 @@ extern DMA_HandleTypeDef hdma_spi1_tx;
 
 extern TIM_HandleTypeDef htim3;
 
-extern volatile uint8_t datasentflag;
+extern volatile uint8_t transferDone;
 extern uint8_t rxBuff[RX_BUFF_SIZE];
 extern uint8_t fade_flag;
 extern uint16_t fade_time;

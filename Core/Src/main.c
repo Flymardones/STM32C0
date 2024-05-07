@@ -62,7 +62,7 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
-volatile uint8_t datasentflag = 0;
+volatile uint8_t transferDone = 0;
 uint8_t rxBuff[RX_BUFF_SIZE];
 /* USER CODE END PV */
 
@@ -97,7 +97,6 @@ uint16_t fade_time = 0;
 
 
 
-
 #if SPI
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     // This function will be called when a SPI transmit via DMA is complete
@@ -105,21 +104,21 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     // Check if this is the SPI peripheral we're interested in
     if (hspi == &hspi1) {
 
-        datasentflag = 1;
+        transferDone = 1;
 
     }
 }
 #endif
 
 #if PWM
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
-    // This function will be called when a PWM pulse is finished
+// void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
+//     // This function will be called when a PWM pulse is finished
 
-    // Check if this is the TIM peripheral we're interested in
-    if (htim == &htim1) {
-        datasentflag = 1;
-    }
-}
+//     // Check if this is the TIM peripheral we're interested in
+//     if (htim == &htim1) {
+//         transferDone = 1;
+//     }
+// }
 #endif
 
 
@@ -164,7 +163,7 @@ int main(void)
 
 
   #if PWM
-  ws2812_pwm.dma = 0;
+  ws2812_pwm.dma = 1;
   #endif
   /* USER CODE END Init */
 
@@ -194,20 +193,26 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
+    
+    // Check if the DMA has gotten data from UART
+    if (uartData.dataReceived) {
+      ws2812_uart_commands(rxBuff, uartData.dataSize);
+      uartData.dataReceived = false;
+    }
 
     #if SPI
       if (fade_flag) {
         ws2812_spi_fade(&ws2812_spi, fade_time);
       }
       else {
-        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+        if (transferDone) { // Wait for transfer to finish before entering sleep mode
+          HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+        }
       }
 
     #endif
@@ -218,15 +223,13 @@ int main(void)
         ws2812_pwm_fade(&ws2812_pwm, fade_time);
       }
       else {
-        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+        if (transferDone) { // Wait for transfer to finish before entering sleep mode
+          HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+        }
       }
     #endif
     
-    // Check if the DMA has gotten data from UART
-    if (uartData.dataReceived) {
-      ws2812_uart_commands(rxBuff, uartData.dataSize);
-      uartData.dataReceived = false;
-    }
+
 
   }
   /* USER CODE END 3 */
@@ -360,7 +363,7 @@ static void MX_TIM1_Init(void)
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
@@ -390,16 +393,14 @@ static void MX_TIM1_Init(void)
 
   if (!ws2812_pwm.dma) {
     TIM1->CR1 |= TIM_CR1_OPM;
-    TIM1->CCER &= ~TIM_CCER_CC1P;
+    TIM1->CCER |= TIM_CCER_CC1P;
     TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE;
-    TIM1->CCMR1 |= TIM_CCMR1_OC1FE; // Must be used in One-pulse mode pr. RM page 488
+    TIM1->CCMR1 |= TIM_CCMR1_OC1FE;
     HAL_TIM_OnePulse_Start(&htim1, TIM_CHANNEL_1);
     TIM1->CCR1 = 1;
   }
-  else {
-    TIM1->CCER &= ~TIM_CCER_CC1P;
-  }
-
+  
+  // SET_BIT(TIM1->DIER, TIM_DIER_UDE);
   
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
