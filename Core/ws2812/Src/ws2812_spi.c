@@ -13,8 +13,9 @@
 uint8_t ping_pong_data_spi[48]; // Buffer used for sending data in ping pong fashion
 uint_fast8_t indxx = 0;
 
+// This function will be called when a SPI transmit via DMA is complete
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
-    // This function will be called when a SPI transmit via DMA is complete
+
 
     // Check if this is the SPI peripheral we're interested in
     if (hspi == &hspi1) {
@@ -41,8 +42,9 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     }
 }
 
+// This function will be called when a SPI transmit via DMA is half complete
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi) {
-	// This function will be called when a SPI transmit via DMA is half complete
+
 
 	// Check if this is the SPI peripheral we're interested in
 	if (hspi == &hspi1) {
@@ -64,39 +66,9 @@ void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi) {
 	}
 }
 
-// void ws2812_spi_adjust_brightness(ws2812_configuration* ws2812_conf, uint8_t brightness) {
-// 	uint8_t send_data[ws2812_conf->led_num * 24];
-// 	uint8_t green, red, blue;
-    
-// 	for (int i = 0; i < ws2812_conf->led_num; i++) {
-//         green = ws2812_conf->led_data[i][GREEN] * brightness / 100;
-//         red = ws2812_conf->led_data[i][RED] * brightness / 100;
-//         blue = ws2812_conf->led_data[i][BLUE] * brightness / 100;
-
-//         for (int j = 0; j < 8; j++) {
-// 			int index = i * 24 + j;
-// 			send_data[index] = (green & (1 << (7 - j))) ? 0b110 : 0b100;
-// 			send_data[index + 8] = (red & (1 << (7 - j))) ? 0b110 : 0b100;
-// 			send_data[index + 16] = (blue & (1 << (7 - j))) ? 0b110 : 0b100;
-//         }
-//     }
-
-//     if (ws2812_conf->dma) {
-//         HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, sizeof(send_data));
-// 		while(!__HAL_DMA_GET_FLAG(&hdma_spi1_tx, DMA_FLAG_TC1)) {};
-// 		//while(__HAL_SPI_GET_FLAG(&hspi1, SPI_FLAG_BSY ));
-		
-
-//     }
-//     else {
-//         HAL_SPI_Transmit(ws2812_conf->handle, send_data, sizeof(send_data), HAL_MAX_DELAY);
-//     }
-// 	ws2812_delay_us(280);
-// }
 
 void ws2812_spi_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms) {
 
-//   uint8_t (*led_data)[3] = (uint8_t(*)[3])ws2812_conf->led_data;
   uint16_t fade_delay = 0;
   
   /* Do nothing */
@@ -104,21 +76,15 @@ void ws2812_spi_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms) {
 	return;
   }
   
-  fade_delay = (fade_time_ms / ws2812_conf->brightness) / 2;
+  fade_delay = (fade_time_ms / ws2812_conf->brightness);
   
   for (ws2812_conf->fade = ws2812_conf->brightness; ws2812_conf->fade >= 0; ws2812_conf->fade -= 2) {
-	ws2812_spi_send_single(ws2812_conf);
-	// for (int i = 0; i < ws2812_conf->led_num; i++) {
-	// 	ws2812_spi_data(ws2812_conf, led_data[i][GREEN], led_data[i][RED], led_data[i][BLUE], fade);
-	// }
+	ws2812_spi_send(ws2812_conf);
 	HAL_Delay(fade_delay);
   }
   
   for (ws2812_conf->fade = 0; ws2812_conf->fade < ws2812_conf->brightness; ws2812_conf->fade += 2) {
-	ws2812_spi_send_single(ws2812_conf);
-	// for (int i = 0; i < ws2812_conf->led_num; i++) {
-	// 	ws2812_spi_data(ws2812_conf, led_data[i][GREEN], led_data[i][RED], led_data[i][BLUE], ws2812_conf->fade);
-	// }
+	ws2812_spi_send(ws2812_conf);
 	HAL_Delay(fade_delay);
   }
 
@@ -140,12 +106,7 @@ void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
 			send_data[i + 8] = (red & mask) ? 0b110 : 0b100;
 			send_data[i + 16] = (blue & mask) ? 0b110 : 0b100;
 		}
-
-		// while(!transferDone) {}; // Wait for DMA to finish
-		// HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, 24);
-		// transferDone = 0;
 		ws2812_conf->ping_pong = !ws2812_conf->ping_pong;
-		
 	}
 	else {
 		uint8_t send_data[24];
@@ -162,7 +123,7 @@ void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
 }
 
 
-void ws2812_spi_send_single(ws2812_configuration* ws2812_conf) {
+void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
 	
 	
 	if (ws2812_conf->dma) {
@@ -192,7 +153,7 @@ void ws2812_spi_send_single(ws2812_configuration* ws2812_conf) {
 
 
 
-void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
+void ws2812_spi_send_burst(ws2812_configuration* ws2812_conf) {
 	
 	uint8_t (*led_data)[3] = (uint8_t(*)[3])ws2812_conf->led_data;
 	uint8_t send_data[ws2812_conf->led_num * 24];
@@ -214,9 +175,6 @@ void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
     if (ws2812_conf->dma) {
         HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, sizeof(send_data));
 		while(!__HAL_DMA_GET_FLAG(&hdma_spi1_tx, DMA_FLAG_TC1)) {};
-		// while(__HAL_SPI_GET_FLAG(&hspi1, SPI_FLAG_BSY ));
-		
-
     }
     else {
         HAL_SPI_Transmit(ws2812_conf->handle, send_data, sizeof(send_data), HAL_MAX_DELAY);
@@ -237,16 +195,14 @@ bool ws2812_spi_init(ws2812_configuration* ws2812_conf) {
    	memset(ws2812_conf->led_data, 0, ws2812_conf->led_num * sizeof(*ws2812_conf->led_data));
 
 	// Set all leds to 0
-    // ws2812_spi_send(ws2812_conf);
-	ws2812_spi_send_single(ws2812_conf);
+	ws2812_spi_send(ws2812_conf);
 
 	return true;
 }
 
 void ws2812_spi_clear(ws2812_configuration* ws2812_conf) {
    	memset(ws2812_conf->led_data, 0, ws2812_conf->led_num * sizeof(*ws2812_conf->led_data));
-	// ws2812_spi_send(ws2812_conf);
-	ws2812_spi_send_single(ws2812_conf);
+	ws2812_spi_send(ws2812_conf);
 }
 
 void ws2812_spi_deinit(ws2812_configuration* ws2812_conf) {

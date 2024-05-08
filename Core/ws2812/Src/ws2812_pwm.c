@@ -76,15 +76,15 @@ void ws2812_pwm_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms) {
 	return;
   }
   
-  fade_delay = (fade_time_ms / ws2812_conf->brightness) / 2;
+  fade_delay = (fade_time_ms / ws2812_conf->brightness);
   
   for (ws2812_conf->fade = ws2812_conf->brightness; ws2812_conf->fade >= 0; ws2812_conf->fade -= 2) {
-    ws2812_pwm_send_single(ws2812_conf);
+    ws2812_pwm_send(ws2812_conf);
     HAL_Delay(fade_delay);
   }
   
   for (ws2812_conf->fade = 0; ws2812_conf->fade < ws2812_conf->brightness; ws2812_conf->fade += 2) {
-    ws2812_pwm_send_single(ws2812_conf);
+    ws2812_pwm_send(ws2812_conf);
 	HAL_Delay(fade_delay);
 
   }
@@ -130,7 +130,7 @@ void ws2812_pwm_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
     }
 }
 
-void ws2812_pwm_send_single(ws2812_configuration* ws2812_conf) {
+void ws2812_pwm_send(ws2812_configuration* ws2812_conf) {
     
     if (ws2812_conf->dma) {
         ws2812_conf->ping_pong = true; // Start with first half of dma buffer
@@ -157,8 +157,8 @@ void ws2812_pwm_send_single(ws2812_configuration* ws2812_conf) {
     }
 }
 
-// #pragma GCC optimize ("O3")
-void ws2812_pwm_send(ws2812_configuration* ws2812_conf) {
+
+void ws2812_pwm_send_burst(ws2812_configuration* ws2812_conf) {
 
     uint8_t send_data[ws2812_conf->led_num * 24];
     uint8_t green, red, blue;
@@ -202,54 +202,10 @@ void ws2812_pwm_send(ws2812_configuration* ws2812_conf) {
     ws2812_delay_us(280);
 }
 
-// // #pragma GCC optimize ("O3")
-// void ws2812_pwm_adjust_brightness(ws2812_configuration* ws2812_conf, uint8_t brightness) {
-
-//     uint8_t 
-//     uint16_t send_data[ws2812_conf->led_num * 24];
-//     uint8_t green, red, blue;
-
-//     for (int i = 0; i < ws2812_conf->led_num; i++) {
-//         green = ws2812_conf->led_data[i][GREEN] * brightness / 100;
-//         red = ws2812_conf->led_data[i][RED] * brightness / 100;
-//         blue = ws2812_conf->led_data[i][BLUE] * brightness / 100;
-
-//         if (ws2812_conf->dma) {
-//             for (int j = 0; j < 8; j++) {
-//                 int index = i * 24 + j;
-//                 send_data[index] = (green & (1 << (7 - j))) ? 36 : 16;
-//                 send_data[index + 8] = (red & (1 << (7 - j))) ? 36 : 16;
-//                 send_data[index + 16] = (blue & (1 << (7 - j))) ? 36 : 16;
-//             }
-//         }
-//         else {
-//             for (int j = 0; j < 8; j++) {
-//                 int index = i * 24 + j;
-//                 send_data[index] = (green & (1 << (7 - j))) ? 20 : 44;
-//                 send_data[index + 8] = (red & (1 << (7 - j))) ? 20 : 44;
-//                 send_data[index + 16] = (blue & (1 << (7 - j))) ? 20 : 44;
-//             }
-//         }
-//     }
-
-//     if (ws2812_conf->dma) {
-//         HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t *) send_data, sizeof(send_data) / sizeof(send_data[0]));
-//         while(!transferDone){};
-//         transferDone = 0;
-//     }
-//     else {
-//         for (int i = 0; i < (ws2812_conf->led_num * 24); i++) {
-//             TIM1->CCR1 = (uint32_t)send_data[i];
-//             TIM1->CR1 |= TIM_CR1_CEN;
-//             while(!(TIM1->SR & TIM_SR_CC1IF)) {}; // Wait for the update event
-//         }
-//     }
-//     ws2812_delay_us(280);
-// }
 
 void ws2812_pwm_clear(ws2812_configuration* ws2812_conf) {
     memset(ws2812_conf->led_data, 0, ws2812_conf->led_num * sizeof(*ws2812_conf->led_data));
-    ws2812_pwm_send_single(ws2812_conf);
+    ws2812_pwm_send(ws2812_conf);
 }
 
 
@@ -263,8 +219,7 @@ bool ws2812_pwm_init(ws2812_configuration* ws2812_conf) {
     
     memset(ws2812_conf->led_data, 0, ws2812_conf->led_num * sizeof(*ws2812_conf->led_data));
 
-    // ws2812_pwm_send(ws2812_conf);
-    ws2812_pwm_send_single(ws2812_conf);
+    ws2812_pwm_send(ws2812_conf);
 
     return true;
 }
