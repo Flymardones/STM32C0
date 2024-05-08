@@ -24,6 +24,14 @@
 
 uint8_t initialized = 0;
 
+bool valid_command_size(int commandSize, int expectedSize) {
+    if (commandSize < expectedSize) {
+        memset(rxBuff, 0, RX_BUFF_SIZE);
+        return false;
+    }
+    return true;
+}
+
 void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
     char *token;
@@ -41,7 +49,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
     }
 
     if (strcmp(tokenizedInput[0], "INIT") == 0) {
-        if (commandSize < 3) { // Check if all parameters are present
+        if (!valid_command_size(commandSize, 3)) {
             return;
         }
         #if SPI
@@ -99,10 +107,9 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         fade_flag = 0;
     }
     else if (strcmp(tokenizedInput[0], "SET_ALL") == 0 && initialized) {
-        if (commandSize < 4) { // Check if all parameters are present
+        if (!valid_command_size(commandSize, 4)) {
             return;
         }
-
         #if SPI
         for (int i = 0; i < ws2812_spi.led_num; i++) {
             ws2812_set_led(&ws2812_spi, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
@@ -119,7 +126,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
     }
     else if (strcmp(tokenizedInput[0], "SET_SINGLE") == 0 && initialized) {
-        if (commandSize < 5) { // Check if all parameters are present
+        if (!valid_command_size(commandSize, 5)) {
             return;
         }
 
@@ -135,7 +142,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
     }
     else if (strcmp(tokenizedInput[0], "SET_BRIGHTNESS") == 0 && initialized) {
-        if (commandSize < 2) { // Check if brightness value is present
+        if (!valid_command_size(commandSize, 2)) {
             return;
         }
 
@@ -159,7 +166,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
     }
     else if (strcmp(tokenizedInput[0], "CLEAR_SINGLE") == 0 && initialized) {
-        if (commandSize < 2) { // Check if all parameters are present
+        if (!valid_command_size(commandSize, 2)) {
             return;
         }
 
@@ -174,7 +181,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
     }
     else if (strcmp(tokenizedInput[0], "START_FADE_ALL") == 0 && initialized) {
-        if (commandSize < 5) { // Check if all parameters are present
+        if (!valid_command_size(commandSize, 5)) {
             return;
         }
         #if SPI
@@ -196,7 +203,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         fade_flag = 0;
     }
     else if (strcmp(tokenizedInput[0], "START_FADE_SINGLE") == 0 && initialized) {
-        if (commandSize < 6) { // Check if all parameters are present
+        if (!valid_command_size(commandSize, 6)) {
             return;
         }
         #if SPI
@@ -211,7 +218,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         fade_flag = 1;
     }
     else if (strcmp(tokenizedInput[0], "STOP_FADE_SINGLE") == 0 && initialized) {
-        if (commandSize < 2) { // Check if all parameters are present
+        if (!valid_command_size(commandSize, 2)) {
             return;
         }
         #if SPI

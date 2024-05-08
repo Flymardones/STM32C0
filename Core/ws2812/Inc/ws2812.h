@@ -55,6 +55,11 @@ typedef struct {
     uint8_t dma;
 
     /*
+    * @member circBuffer is the buffer for sending data in circular mode
+    */
+    uint8_t circBuffer[48];
+
+    /*
     * @member ping_pong is used for sending in a ping pong fashion
     */
     bool ping_pong;

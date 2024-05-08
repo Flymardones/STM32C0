@@ -10,7 +10,6 @@
 #include "ws2812.h"
 
 extern ws2812_configuration ws2812_pwm;
-extern uint_fast8_t indx;
 
 void ws2812_pwm_send_burst(ws2812_configuration* ws2812_conf);
 

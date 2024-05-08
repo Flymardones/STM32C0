@@ -90,36 +90,8 @@ ws2812_configuration ws2812_spi;
 ws2812_configuration ws2812_pwm;
 #endif
 
-uart_data uartData;
-
 uint8_t fade_flag = 0;
 uint16_t fade_time = 0;
-
-
-
-#if SPI
-// void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
-//     // This function will be called when a SPI transmit via DMA is complete
-
-//     // Check if this is the SPI peripheral we're interested in
-//     if (hspi == &hspi1) {
-
-//         transferDone = 1;
-
-//     }
-// }
-#endif
-
-#if PWM
-// void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
-//     // This function will be called when a PWM pulse is finished
-
-//     // Check if this is the TIM peripheral we're interested in
-//     if (htim == &htim1) {
-//         transferDone = 1;
-//     }
-// }
-#endif
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
@@ -128,16 +100,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     // Check if this is the UART peripheral we're interested in
     if (huart == &huart1) {
 
-      uartData.dataReceived = true;
-      uartData.dataSize = Size;
+      ws2812_uart_commands(rxBuff, Size);
       HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rxBuff, RX_BUFF_SIZE);
 
     }
 }
-
-
-
-
 
 /* USER CODE END 0 */
 
@@ -198,12 +165,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    
-    // Check if the DMA has gotten data from UART
-    if (uartData.dataReceived) {
-      ws2812_uart_commands(rxBuff, uartData.dataSize);
-      uartData.dataReceived = false;
-    }
 
     #if SPI
       if (fade_flag) {
@@ -397,10 +358,8 @@ static void MX_TIM1_Init(void)
     TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE;
     TIM1->CCMR1 |= TIM_CCMR1_OC1FE;
     HAL_TIM_OnePulse_Start(&htim1, TIM_CHANNEL_1);
-    TIM1->CCR1 = 1;
+    TIM1->CCR1 = 1; // Set CCR1 to 1 to set CCP1 to active state which is low
   }
-  
-  // SET_BIT(TIM1->DIER, TIM_DIER_UDE);
   
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
