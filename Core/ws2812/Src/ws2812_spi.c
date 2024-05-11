@@ -18,12 +18,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     // Check if this is the SPI peripheral we're interested in
     if (hspi == &hspi1) {
 		if (indx < ws2812_spi.led_num) {
-			if (fade_flag) {
-				ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE], ws2812_spi.fade);
-			}
-			else {
-				ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE], ws2812_spi.brightness);
-			}
+			ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE]);
 			indx++;
 		}
 		else if (indx < ws2812_spi.led_num + 5) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
@@ -46,12 +41,7 @@ void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi) {
 	// Check if this is the SPI peripheral we're interested in
 	if (hspi == &hspi1) {
 		if (indx < ws2812_spi.led_num) {
-			if (fade_flag) {
-				ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE], ws2812_spi.fade);
-			}
-			else {
-				ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE], ws2812_spi.brightness);
-			}
+			ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE]);
 			indx++;
 		}
 		else if (indx < ws2812_spi.led_num + 5) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
@@ -88,11 +78,18 @@ void ws2812_spi_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms) {
 }
 
 #pragma GCC optimize ("O1")
-void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t red, uint8_t blue, uint8_t brightness) {
+void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t red, uint8_t blue) {
 
-	green = green * brightness / 100;
-	red = red * brightness / 100;
-	blue = blue * brightness / 100;
+	if (fade_flag) {
+		green = green * ws2812_conf->fade / 100;
+		red = red * ws2812_conf->fade / 100;
+		blue = blue * ws2812_conf->fade / 100;
+	}
+	else {
+		green = green * ws2812_conf->brightness / 100;
+		red = red * ws2812_conf->brightness / 100;
+		blue = blue * ws2812_conf->brightness / 100;
+	}
 
 	if (ws2812_conf->dma) {
 		uint8_t *send_data = ws2812_conf->ping_pong ? ws2812_conf->circBuffer : ws2812_conf->circBuffer + 24;
@@ -126,31 +123,20 @@ void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
 		ws2812_conf->ping_pong = true;
 
 		// Initialise data for one transfer and start DMA in circular mode  
-		if (fade_flag) {
-			for (uint8_t i = 0; i < 2; i++) {
-				ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE], ws2812_conf->fade);
-			}
+		for (uint8_t i = 0; i < 2; i++) {
+			ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE]);
 		}
-		else {
-			for (uint8_t i = 0; i < 2; i++) {
-				ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE], ws2812_conf->brightness);
-			}
-		}
+
 		indx = 2;
 		transferDone = 0;
 		HAL_SPI_Transmit_DMA(ws2812_conf->handle, ws2812_conf->circBuffer, 48);
 	}
 	else {
-		if (fade_flag) {
-			for (uint8_t i = 0; i < ws2812_conf->led_num; i++) {
-				ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE], ws2812_conf->fade);
-			}
+	
+		for (uint8_t i = 0; i < ws2812_conf->led_num; i++) {
+			ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE]);
 		}
-		else {
-			for (uint8_t i = 0; i < ws2812_conf->led_num; i++) {
-				ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE], ws2812_conf->brightness);
-			}
-		}
+
 		ws2812_delay_us(280);
 	}
 }
@@ -162,9 +148,16 @@ void ws2812_spi_send_burst(ws2812_configuration* ws2812_conf) {
 	uint8_t green, red, blue;
     
 	for (uint8_t i = 0; i < ws2812_conf->led_num; i++) {
-        green = led_data[i][GREEN] * ws2812_conf->brightness / 100;
-        red = led_data[i][RED] * ws2812_conf->brightness / 100;
-        blue = led_data[i][BLUE] * ws2812_conf->brightness / 100;
+		if (fade_flag) {
+			green = led_data[i][GREEN] * ws2812_conf->fade / 100;
+			red = led_data[i][RED] * ws2812_conf->fade / 100;
+			blue = led_data[i][BLUE] * ws2812_conf->fade / 100;
+		}
+		else {
+			green = led_data[i][GREEN] * ws2812_conf->brightness / 100;
+			red = led_data[i][RED] * ws2812_conf->brightness / 100;
+			blue = led_data[i][BLUE] * ws2812_conf->brightness / 100;
+		}
 
         for (uint8_t j = 0; j < 8; j++) {
 			int index = i * 24 + j;

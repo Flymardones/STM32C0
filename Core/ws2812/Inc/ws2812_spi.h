@@ -16,7 +16,7 @@ bool ws2812_spi_init(ws2812_configuration* ws2812_conf);
 
 void ws2812_spi_send_burst(ws2812_configuration* ws2812_conf);
 
-void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t red, uint8_t blue, uint8_t brightness);
+void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t red, uint8_t blue);
 
 void ws2812_spi_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms);
 
