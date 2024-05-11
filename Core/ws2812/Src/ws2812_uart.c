@@ -19,6 +19,10 @@
 #include "ws2812_pwm.h"
 #endif
 
+#if GPIO
+#include "ws2812_gpio.h"
+#endif
+
 #define MAX_COMMAND_SIZE 10
 
 
@@ -87,7 +91,22 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         if(ws2812_pwm_init(&ws2812_pwm)) {
             initialized = 1;
         }
+        #endif
 
+        #if GPIO
+        if (initialized) {
+            ws2812_gpio_deinit(&ws2812_gpio);
+            initialized = 0;
+            fade_flag = 0;
+            fade_time = 0;
+        }
+        ws2812_gpio.handle = (void*)GPIO_PIN_9;
+        ws2812_gpio.led_num = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_gpio.brightness = (uint8_t)atoi(tokenizedInput[2]);
+
+        if (ws2812_gpio_init(&ws2812_gpio)) {
+            initialized = 1;
+        }
         #endif
 
     }
@@ -102,6 +121,11 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_pwm_clear(&ws2812_pwm);
         while(!transferDone){}; // Wait for ongoing transfer to finish
         ws2812_pwm_deinit(&ws2812_pwm);
+        #endif
+
+        #if GPIO
+        ws2812_gpio_clear(&ws2812_gpio);
+        ws2812_gpio_deinit(&ws2812_gpio);
         #endif
         initialized = 0;
         fade_flag = 0;
@@ -118,10 +142,17 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
 
         #if PWM
-        for (int i = 0; i < ws2812_pwm.led_num; i++) {
+        for (uint8_t i = 0; i < ws2812_pwm.led_num; i++) {
             ws2812_set_led(&ws2812_pwm, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
         ws2812_pwm_send(&ws2812_pwm);
+        #endif
+
+        #if GPIO
+        for (uint8_t i = 0; i < ws2812_gpio.led_num; i++) {
+            ws2812_set_led(&ws2812_gpio, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        ws2812_gpio_send(&ws2812_gpio);
         #endif
 
     }
@@ -140,6 +171,11 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_pwm_send(&ws2812_pwm);
         #endif
 
+        #if GPIO
+        ws2812_set_led(&ws2812_gpio, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        ws2812_gpio_send(&ws2812_gpio);
+        #endif
+
     }
     else if (strcmp(tokenizedInput[0], "SET_BRIGHTNESS") == 0 && initialized) {
         if (!valid_command_size(commandSize, 2)) {
@@ -147,13 +183,18 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         }
 
         #if SPI
-        ws2812_spi.brightness = atoi(tokenizedInput[1]);
+        ws2812_spi.brightness = (uint8_t)atoi(tokenizedInput[1]);
         ws2812_spi_send(&ws2812_spi);
         #endif
 
         #if PWM
-        ws2812_pwm.brightness = atoi(tokenizedInput[1]);
+        ws2812_pwm.brightness = (uint8_t)atoi(tokenizedInput[1]);
         ws2812_pwm_send(&ws2812_pwm);
+        #endif
+
+        #if GPIO
+        ws2812_gpio.brightness = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_gpio_send(&ws2812_gpio);
         #endif
     }
     else if (strcmp(tokenizedInput[0], "CLEAR_ALL") == 0 && initialized) {
@@ -163,6 +204,10 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
         #if PWM
         ws2812_pwm_clear(&ws2812_pwm);
+        #endif
+
+        #if GPIO
+        ws2812_gpio_clear(&ws2812_gpio);
         #endif
     }
     else if (strcmp(tokenizedInput[0], "CLEAR_SINGLE") == 0 && initialized) {
@@ -179,6 +224,11 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_set_led(&ws2812_pwm, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
         ws2812_pwm_send(&ws2812_pwm);
         #endif
+
+        #if GPIO
+        ws2812_set_led(&ws2812_gpio, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        ws2812_gpio_send(&ws2812_gpio);
+        #endif
     }
     else if (strcmp(tokenizedInput[0], "START_FADE_ALL") == 0 && initialized) {
         if (!valid_command_size(commandSize, 5)) {
@@ -193,6 +243,12 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #if PWM
         for (uint8_t i = 0; i < ws2812_pwm.led_num; i++) {
             ws2812_set_led(&ws2812_pwm, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        #endif
+
+        #if GPIO
+        for (uint8_t i = 0; i < ws2812_gpio.led_num; i++) {
+            ws2812_set_led(&ws2812_gpio, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
         #endif
 	
@@ -213,6 +269,10 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #if PWM
         ws2812_set_led(&ws2812_pwm, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
         #endif
+
+        #if GPIO
+        ws2812_set_led(&ws2812_gpio, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        #endif
         
         fade_time = (uint16_t)atoi(tokenizedInput[5]);
         fade_flag = 1;
@@ -227,6 +287,10 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         
         #if PWM
         ws2812_set_led(&ws2812_pwm, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        #endif
+
+        #if GPIO
+        ws2812_set_led(&ws2812_gpio, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
         #endif
     }
 

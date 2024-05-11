@@ -22,7 +22,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ws2812_uart.h"
-#include "string.h"
 
 #if SPI
 #include "ws2812_spi.h"
@@ -31,6 +30,11 @@
 #if PWM
 #include "ws2812_pwm.h"
 #endif
+
+#if GPIO
+#include "ws2812_gpio.h"
+#endif
+
 
 /* USER CODE END Includes */
 
@@ -62,7 +66,7 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
-volatile uint8_t transferDone = 0;
+volatile uint8_t transferDone = 1;
 uint8_t rxBuff[RX_BUFF_SIZE];
 /* USER CODE END PV */
 
@@ -88,6 +92,10 @@ ws2812_configuration ws2812_spi;
 
 #if PWM
 ws2812_configuration ws2812_pwm;
+#endif
+
+#if GPIO
+ws2812_configuration ws2812_gpio;
 #endif
 
 uint8_t fade_flag = 0;
@@ -188,6 +196,20 @@ int main(void)
           HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
         }
       }
+    #endif
+
+    #if GPIO
+      if (fade_flag) {
+        ws2812_gpio_fade(&ws2812_gpio, fade_time);
+      }
+      else {
+        if (transferDone) { // Wait for transfer to finish before entering sleep mode
+          HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+        }
+      }
+
+      
+
     #endif
     
 
@@ -487,12 +509,18 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
 /* USER CODE BEGIN MX_GPIO_Init_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 /* USER CODE END MX_GPIO_Init_2 */
 }
 

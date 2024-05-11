@@ -9,6 +9,8 @@
 #define WS2812_INC_WS2812_H_
 
 #include "main.h"
+#include "string.h"
+#include "stdlib.h"
 
 typedef enum {
     ws2812_ok,

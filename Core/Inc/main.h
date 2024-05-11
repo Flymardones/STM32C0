@@ -62,22 +62,23 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 #define SPI 0
-#define PWM 1
+#define PWM 0
+#define GPIO 1
 #define RX_BUFF_SIZE 256
 
 #if SPI
 
 #endif
 
+/* Peripheral handles */
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim3;
+
+/* DMA handles */
 extern DMA_HandleTypeDef hdma_tim1_ch1;
 extern DMA_HandleTypeDef hdma_spi1_tx;
 
-// extern void MX_SPI1_Init(void);
-// extern void MX_TIM1_Init(void);
-
-extern TIM_HandleTypeDef htim3;
 
 extern volatile uint8_t transferDone;
 extern uint8_t rxBuff[RX_BUFF_SIZE];

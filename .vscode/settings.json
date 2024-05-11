@@ -13,6 +13,7 @@
     "ws2812_uart.h": "c",
     "stdlib.h": "c",
     "stm32c0xx_hal_conf.h": "c",
-    "stm32c0xx_hal_cortex.h": "c"
+    "stm32c0xx_hal_cortex.h": "c",
+    "ws2812_gpio.h": "c"
   }
 }
