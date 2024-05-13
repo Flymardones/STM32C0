@@ -18,19 +18,37 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
 
     // Check if this is the TIM peripheral we're interested in
     if (htim == &htim1) {
-        if (indx < ws2812_pwm.led_num) {
+        if (indx < ws2812_pwm_front.led_num) {
             // Fill second half of dma buffer
-            ws2812_pwm_data(&ws2812_pwm, ws2812_pwm.led_data[indx][GREEN], ws2812_pwm.led_data[indx][RED], ws2812_pwm.led_data[indx][BLUE]);
+            ws2812_pwm_data(&ws2812_pwm_front, ws2812_pwm_front.led_data[indx][GREEN], ws2812_pwm_front.led_data[indx][RED], ws2812_pwm_front.led_data[indx][BLUE]);
             indx++;
         }
-        else if (indx < ws2812_pwm.led_num + 5) {
+        else if (indx < ws2812_pwm_front.led_num + 5) {
             for (uint8_t i = 24; i < 48; i++) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
-                ws2812_pwm.circBuffer[i] = 0;
+                ws2812_pwm_front.circBuffer[i] = 0;
             }
             indx++;
         }
         else {
             HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);
+            transferDone = 1;
+            indx = 0;
+        }
+    }
+    else if (htim == &htim3) {
+        if (indx < ws2812_pwm_back.led_num) {
+            // Fill second half of dma buffer
+            ws2812_pwm_data(&ws2812_pwm_back, ws2812_pwm_back.led_data[indx][GREEN], ws2812_pwm_back.led_data[indx][RED], ws2812_pwm_back.led_data[indx][BLUE]);
+            indx++;
+        }
+        else if (indx < ws2812_pwm_back.led_num + 5) {
+            for (uint8_t i = 24; i < 48; i++) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
+                ws2812_pwm_back.circBuffer[i] = 0;
+            }
+            indx++;
+        }
+        else {
+            HAL_TIM_PWM_Stop_DMA(&htim3, TIM_CHANNEL_1);
             transferDone = 1;
             indx = 0;
         }
@@ -41,14 +59,27 @@ void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim) {
 
     // Check if this is the TIM peripheral we're interested in
     if (htim == &htim1) {
-        if (indx < ws2812_pwm.led_num) {
+        if (indx < ws2812_pwm_front.led_num) {
             // Fill first half of dma buffer
-            ws2812_pwm_data(&ws2812_pwm, ws2812_pwm.led_data[indx][GREEN], ws2812_pwm.led_data[indx][RED], ws2812_pwm.led_data[indx][BLUE]);
+            ws2812_pwm_data(&ws2812_pwm_front, ws2812_pwm_front.led_data[indx][GREEN], ws2812_pwm_front.led_data[indx][RED], ws2812_pwm_front.led_data[indx][BLUE]);
             indx++;
         }
-        else if(indx < ws2812_pwm.led_num + 5) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
+        else if(indx < ws2812_pwm_front.led_num + 5) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
             for (uint8_t i = 0; i < 24; i++) {
-                ws2812_pwm.circBuffer[i] = 0;
+                ws2812_pwm_front.circBuffer[i] = 0;
+            }
+            indx++;
+        }
+    }
+    else if (htim == &htim3) {
+        if (indx < ws2812_pwm_back.led_num) {
+            // Fill first half of dma buffer
+            ws2812_pwm_data(&ws2812_pwm_back, ws2812_pwm_back.led_data[indx][GREEN], ws2812_pwm_back.led_data[indx][RED], ws2812_pwm_back.led_data[indx][BLUE]);
+            indx++;
+        }
+        else if(indx < ws2812_pwm_back.led_num + 5) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
+            for (uint8_t i = 0; i < 24; i++) {
+                ws2812_pwm_back.circBuffer[i] = 0;
             }
             indx++;
         }
@@ -81,7 +112,7 @@ void ws2812_pwm_fade(ws2812_configuration* ws2812_conf, uint16_t fade_time_ms) {
 #pragma GCC optimize ("O1")
 void ws2812_pwm_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t red, uint8_t blue) {
 
-    if (fade_flag) {
+    if (fade_front || fade_back) {
         green = green * ws2812_conf->fade / 100;
         red = red * ws2812_conf->fade / 100;
         blue = blue * ws2812_conf->fade / 100;
@@ -114,10 +145,15 @@ void ws2812_pwm_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
             send_data[i + 16] = (blue & mask) ? 20 : 44;
         }
 
+        TIM_TypeDef * handle = (TIM_TypeDef *) ws2812_conf->handle;
+
         for (uint8_t i = 0; i < 24; i++) {
-            TIM1->CCR1 = send_data[i];
-            TIM1->CR1 |= TIM_CR1_CEN;
-            while(TIM1->CR1 & TIM_CR1_CEN) {}; // wait for CEN bit to be cleared by hardware
+            handle->CCR1 = send_data[i];
+            handle->CR1 |= TIM_CR1_CEN;
+            while(handle->CR1 & TIM_CR1_CEN) {}; // wait for CEN bit to be cleared by hardware
+            // TIM1->CCR1 = send_data[i];
+            // TIM1->CR1 |= TIM_CR1_CEN;
+            // while(TIM1->CR1 & TIM_CR1_CEN) {}; // wait for CEN bit to be cleared by hardware
         }  
     }
 }
@@ -187,10 +223,16 @@ void ws2812_pwm_send_burst(ws2812_configuration* ws2812_conf) {
         transferDone = 0;
     }
     else {
+
+        TIM_TypeDef * handle = (TIM_TypeDef *) ws2812_conf->handle;
+
         for (uint8_t i = 0; i < (ws2812_conf->led_num * 24); i++) {
-            TIM1->CCR1 = (uint32_t)send_data[i];
-            TIM1->CR1 |= TIM_CR1_CEN;
-            while(TIM1->CR1 & TIM_CR1_CEN) {}; // wait for CEN bit to be cleared by hardware
+            handle->CCR1 = (uint32_t)send_data[i];
+            handle->CR1 |= TIM_CR1_CEN;
+            while(handle->CR1 & TIM_CR1_CEN) {}; // wait for CEN bit to be cleared by hardware
+            // TIM1->CCR1 = (uint32_t)send_data[i];
+            // TIM1->CR1 |= TIM_CR1_CEN;
+            // while(TIM1->CR1 & TIM_CR1_CEN) {}; // wait for CEN bit to be cleared by hardware
         }
     }
     ws2812_delay_us(280);

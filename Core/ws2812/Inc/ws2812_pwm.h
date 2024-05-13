@@ -9,7 +9,8 @@
 #define WS2812_INC_WS2812_PWM_H_
 #include "ws2812.h"
 
-extern ws2812_configuration ws2812_pwm;
+extern ws2812_configuration ws2812_pwm_front;
+extern ws2812_configuration ws2812_pwm_back;
 
 void ws2812_pwm_send_burst(ws2812_configuration* ws2812_conf);
 

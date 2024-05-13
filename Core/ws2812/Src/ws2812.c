@@ -24,7 +24,7 @@ void ws2812_set_led(ws2812_configuration* ws2812_conf, uint8_t led, uint8_t red,
 
 
 void ws2812_delay_us(uint16_t us) {
-    __HAL_TIM_SET_COUNTER(&htim3, 0);
-    while (__HAL_TIM_GET_COUNTER(&htim3) < us);
+    __HAL_TIM_SET_COUNTER(&htim14, 0);
+    while (__HAL_TIM_GET_COUNTER(&htim14) < us);
 }
 

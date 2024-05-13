@@ -66,19 +66,17 @@ void Error_Handler(void);
 #define GPIO 0
 #define RX_BUFF_SIZE 128
 
-#if SPI
-
-#endif
-
 /* Peripheral handles */
+#if SPI
 extern SPI_HandleTypeDef hspi1;
+#endif
+#if PWM
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
-
-/* DMA handles */
-extern DMA_HandleTypeDef hdma_tim1_ch1;
-extern DMA_HandleTypeDef hdma_spi1_tx;
-
+extern bool fade_front;
+extern bool fade_back;
+#endif
+extern TIM_HandleTypeDef htim14;
 
 extern volatile uint8_t transferDone;
 extern uint8_t rxBuff[RX_BUFF_SIZE];

@@ -26,7 +26,13 @@
 #define MAX_COMMAND_SIZE 10
 
 
-uint8_t initialized = 0;
+bool initialized = false;
+
+#if PWM
+bool front_initialized = false;
+bool back_initialized = false;
+#endif
+
 
 bool valid_command_size(int commandSize, int expectedSize) {
     if (commandSize < expectedSize) {
@@ -36,6 +42,7 @@ bool valid_command_size(int commandSize, int expectedSize) {
     return true;
 }
 
+#pragma GCC optimize ("Os") 
 void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
     char *token;
@@ -70,33 +77,58 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_spi.ping_pong = true;
     
         if (ws2812_spi_init(&ws2812_spi)) {
-            initialized = 1;
+            initialized = true;
         }
         #endif
 
         #if PWM
-        if (initialized) {
-            ws2812_pwm_deinit(&ws2812_pwm);
-            initialized = 0;
-            fade_flag = 0;
+        if (front_initialized) {
+            ws2812_pwm_deinit(&ws2812_pwm_front);
+            front_initialized = false;
+            fade_front = false;
             fade_time = 0;
         }
-        ws2812_pwm.handle = &htim1;
-        ws2812_pwm.led_num = (uint8_t)atoi(tokenizedInput[1]);
-        ws2812_pwm.brightness = (uint8_t)atoi(tokenizedInput[2]);
-        ws2812_pwm.dma = 1;
-        ws2812_pwm.ping_pong = true;
+        else if (back_initialized) {
+            ws2812_pwm_deinit(&ws2812_pwm_back);
+            back_initialized = false;
+            fade_back = false;
+            fade_time = 0;
+        }
+        else if (front_initialized && back_initialized) {
+            ws2812_pwm_deinit(&ws2812_pwm_front);
+            ws2812_pwm_deinit(&ws2812_pwm_back);
+            front_initialized = false;
+            back_initialized = false;
+            fade_front = false;
+            fade_back = false;
+            fade_time = 0;
+        }
 
+        ws2812_pwm_front.handle = &htim1;
+        ws2812_pwm_front.led_num = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_front.brightness = (uint8_t)atoi(tokenizedInput[2]);
+        ws2812_pwm_front.dma = 1;
+        ws2812_pwm_front.ping_pong = true;
 
-        if(ws2812_pwm_init(&ws2812_pwm)) {
-            initialized = 1;
+        ws2812_pwm_back.handle = &htim3;
+        ws2812_pwm_back.led_num = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_back.brightness = (uint8_t)atoi(tokenizedInput[2]);
+        ws2812_pwm_back.dma = 1;
+        ws2812_pwm_back.ping_pong = true;
+
+        if(ws2812_pwm_init(&ws2812_pwm_front)) {
+            front_initialized = true;
+        }
+
+        if(ws2812_pwm_init(&ws2812_pwm_back)) {
+            back_initialized = true;
         }
         #endif
 
         #if GPIO
         if (initialized) {
             ws2812_gpio_deinit(&ws2812_gpio);
-            initialized = 0;
+            initialized = false;
             fade_flag = 0;
             fade_time = 0;
         }
@@ -105,32 +137,108 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_gpio.brightness = (uint8_t)atoi(tokenizedInput[2]);
 
         if (ws2812_gpio_init(&ws2812_gpio)) {
-            initialized = 1;
+            initialized = true;
         }
         #endif
 
     }
-    else if (strcmp(tokenizedInput[0], "DEINIT") == 0) {
+    else if (strcmp(tokenizedInput[0], "INIT_FRONT") == 0) {
+        #if PWM
+        if (!valid_command_size(commandSize, 3)) {
+            return;
+        }
+
+        if (front_initialized) {
+            ws2812_pwm_deinit(&ws2812_pwm_front);
+            front_initialized = false;
+            fade_front = false;
+            fade_time = 0;
+        }
+
+        ws2812_pwm_front.handle = &htim1;
+        ws2812_pwm_front.led_num = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_front.brightness = (uint8_t)atoi(tokenizedInput[2]);
+        ws2812_pwm_front.dma = 1;
+        ws2812_pwm_front.ping_pong = true;
+
+        if (ws2812_pwm_init(&ws2812_pwm_front)) {
+            front_initialized = true;
+        }
+        #endif
+
+    }
+    else if (strcmp(tokenizedInput[0], "INIT_BACK") == 0) {
+        #if PWM
+        if (!valid_command_size(commandSize, 3)) {
+            return;
+        }
+        if (back_initialized) {
+            ws2812_pwm_deinit(&ws2812_pwm_back);
+            back_initialized = false;
+            fade_back = false;
+            fade_time = 0;
+        }
+
+        ws2812_pwm_back.handle = &htim3;
+        ws2812_pwm_back.led_num = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_back.brightness = (uint8_t)atoi(tokenizedInput[2]);
+        ws2812_pwm_back.dma = 1;
+        ws2812_pwm_back.ping_pong = true;
+
+        if (ws2812_pwm_init(&ws2812_pwm_back)) {
+            back_initialized = true;
+        }
+        #endif
+
+    }
+    else if (strcmp(tokenizedInput[0], "DEINIT") == 0 && initialized || (front_initialized && back_initialized)) {
         #if SPI
         ws2812_spi_clear(&ws2812_spi);
         while(!transferDone){}; // Wait for ongoing transfer to finish
         ws2812_spi_deinit(&ws2812_spi);
+        initialized = false;
+        fade_flag = 0;
         #endif
 
         #if PWM
-        ws2812_pwm_clear(&ws2812_pwm);
+        ws2812_pwm_clear(&ws2812_pwm_front);
+        ws2812_pwm_clear(&ws2812_pwm_back);
         while(!transferDone){}; // Wait for ongoing transfer to finish
-        ws2812_pwm_deinit(&ws2812_pwm);
+        ws2812_pwm_deinit(&ws2812_pwm_front);
+        ws2812_pwm_deinit(&ws2812_pwm_back);
+        front_initialized = false;
+        back_initialized = false;
+        fade_front = false;
+        fade_back = false;
         #endif
 
         #if GPIO
         ws2812_gpio_clear(&ws2812_gpio);
         ws2812_gpio_deinit(&ws2812_gpio);
-        #endif
-        initialized = 0;
+        initialized = false;
         fade_flag = 0;
+        #endif
+
     }
-    else if (strcmp(tokenizedInput[0], "SET_ALL") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "DEINIT_FRONT") == 0 && front_initialized) {
+        #if PWM
+        ws2812_pwm_clear(&ws2812_pwm_front);
+        while(!transferDone){}; // Wait for ongoing transfer to finish
+        ws2812_pwm_deinit(&ws2812_pwm_front);
+        front_initialized = false;
+        fade_front = false;
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "DEINIT_BACK") == 0 && back_initialized) {
+        #if PWM
+        ws2812_pwm_clear(&ws2812_pwm_back);
+        while(!transferDone){}; // Wait for ongoing transfer to finish
+        ws2812_pwm_deinit(&ws2812_pwm_back);
+        back_initialized = false;
+        fade_back = false;
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "SET_ALL") == 0 && initialized || (front_initialized && back_initialized)) {
         if (!valid_command_size(commandSize, 4)) {
             return;
         }
@@ -142,10 +250,15 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
 
         #if PWM
-        for (uint8_t i = 0; i < ws2812_pwm.led_num; i++) {
-            ws2812_set_led(&ws2812_pwm, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        for (uint8_t i = 0; i < ws2812_pwm_front.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_front, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
-        ws2812_pwm_send(&ws2812_pwm);
+        ws2812_pwm_send(&ws2812_pwm_front);
+
+        for (uint8_t i = 0; i < ws2812_pwm_back.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_back, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        ws2812_pwm_send(&ws2812_pwm_back);
         #endif
 
         #if GPIO
@@ -154,9 +267,31 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         }
         ws2812_gpio_send(&ws2812_gpio);
         #endif
-
     }
-    else if (strcmp(tokenizedInput[0], "SET_SINGLE") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "SET_ALL_FRONT") == 0 && front_initialized) {
+        if (!valid_command_size(commandSize, 4)) {
+            return;
+        }
+        #if PWM
+        for (uint8_t i = 0; i < ws2812_pwm_front.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_front, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        ws2812_pwm_send(&ws2812_pwm_front);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "SET_ALL_BACK") == 0 && back_initialized) {
+        if (!valid_command_size(commandSize, 4)) {
+            return;
+        }
+
+        #if PWM
+        for (uint8_t i = 0; i < ws2812_pwm_back.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_back, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        ws2812_pwm_send(&ws2812_pwm_back);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "SET_SINGLE") == 0 && initialized || (front_initialized && back_initialized)) {
         if (!valid_command_size(commandSize, 5)) {
             return;
         }
@@ -167,8 +302,10 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
 
         #if PWM
-        ws2812_set_led(&ws2812_pwm, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
-        ws2812_pwm_send(&ws2812_pwm);
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        ws2812_pwm_send(&ws2812_pwm_front);
+        ws2812_pwm_send(&ws2812_pwm_back);
         #endif
 
         #if GPIO
@@ -177,7 +314,25 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
 
     }
-    else if (strcmp(tokenizedInput[0], "SET_BRIGHTNESS") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "SET_SINGLE_FRONT") == 0 && front_initialized) {
+        if (!valid_command_size(commandSize, 5)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        ws2812_pwm_send(&ws2812_pwm_front);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "SET_SINGLE_BACK") == 0 && back_initialized) {
+        if (!valid_command_size(commandSize, 5)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        ws2812_pwm_send(&ws2812_pwm_back);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "SET_BRIGHTNESS") == 0 && initialized || (front_initialized && back_initialized)) {
         if (!valid_command_size(commandSize, 2)) {
             return;
         }
@@ -188,8 +343,10 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
 
         #if PWM
-        ws2812_pwm.brightness = (uint8_t)atoi(tokenizedInput[1]);
-        ws2812_pwm_send(&ws2812_pwm);
+        ws2812_pwm_front.brightness = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_back.brightness = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_send(&ws2812_pwm_front);
+        ws2812_pwm_send(&ws2812_pwm_back);
         #endif
 
         #if GPIO
@@ -197,20 +354,43 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_gpio_send(&ws2812_gpio);
         #endif
     }
-    else if (strcmp(tokenizedInput[0], "CLEAR_ALL") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "SET_BRIGHTNESS_FRONT") == 0 && front_initialized) {
+        #if PWM
+        ws2812_pwm_front.brightness = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_send(&ws2812_pwm_front);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "SET_BRIGHTNESS_BACK") == 0 && back_initialized) {
+        #if PWM
+        ws2812_pwm_back.brightness = (uint8_t)atoi(tokenizedInput[1]);
+        ws2812_pwm_send(&ws2812_pwm_back);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "CLEAR_ALL") == 0 && initialized || (front_initialized && back_initialized)) {
         #if SPI
         ws2812_spi_clear(&ws2812_spi);
         #endif
 
         #if PWM
-        ws2812_pwm_clear(&ws2812_pwm);
+        ws2812_pwm_clear(&ws2812_pwm_front);
+        ws2812_pwm_clear(&ws2812_pwm_back);
         #endif
 
         #if GPIO
         ws2812_gpio_clear(&ws2812_gpio);
         #endif
     }
-    else if (strcmp(tokenizedInput[0], "CLEAR_SINGLE") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "CLEAR_ALL_FRONT") == 0 && front_initialized) {
+        #if PWM
+        ws2812_pwm_clear(&ws2812_pwm_front);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "CLEAR_ALL_BACK") == 0 && back_initialized) {
+        #if PWM
+        ws2812_pwm_clear(&ws2812_pwm_back);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "CLEAR_SINGLE") == 0 && initialized || (front_initialized && back_initialized)) {
         if (!valid_command_size(commandSize, 2)) {
             return;
         }
@@ -221,8 +401,10 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         #endif
 
         #if PWM
-        ws2812_set_led(&ws2812_pwm, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
-        ws2812_pwm_send(&ws2812_pwm);
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        ws2812_pwm_send(&ws2812_pwm_front);
+        ws2812_pwm_send(&ws2812_pwm_back);
         #endif
 
         #if GPIO
@@ -230,7 +412,25 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         ws2812_gpio_send(&ws2812_gpio);
         #endif
     }
-    else if (strcmp(tokenizedInput[0], "START_FADE_ALL") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "CLEAR_SINGLE_FRONT") == 0 && front_initialized) {
+        if (!valid_command_size(commandSize, 2)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        ws2812_pwm_send(&ws2812_pwm_front);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "CLEAR_SINGLE_BACK") == 0 && back_initialized) {
+        if (!valid_command_size(commandSize, 2)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        ws2812_pwm_send(&ws2812_pwm_back);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "START_FADE_ALL") == 0 && initialized || (front_initialized && back_initialized)) {
         if (!valid_command_size(commandSize, 5)) {
             return;
         }
@@ -238,61 +438,155 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
         for (uint8_t i = 0; i < ws2812_spi.led_num; i++) {
             ws2812_set_led(&ws2812_spi, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
+        fade_flag = 1;
         #endif
 	
         #if PWM
-        for (uint8_t i = 0; i < ws2812_pwm.led_num; i++) {
-            ws2812_set_led(&ws2812_pwm, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        for (uint8_t i = 0; i < ws2812_pwm_front.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_front, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
+        for (uint8_t i = 0; i < ws2812_pwm_back.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_back, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        fade_front = true;
+        fade_back = true;
         #endif
 
         #if GPIO
         for (uint8_t i = 0; i < ws2812_gpio.led_num; i++) {
             ws2812_set_led(&ws2812_gpio, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
+        fade_flag = 1;
         #endif
 	
         fade_time = (uint16_t)atoi(tokenizedInput[4]);
-        fade_flag = 1;
+
     }
-    else if (strcmp(tokenizedInput[0], "STOP_FADE_ALL") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "START_FADE_ALL_FRONT") == 0 && front_initialized) {
+        if (!valid_command_size(commandSize, 5)) {
+            return;
+        }
+        #if PWM
+        for (uint8_t i = 0; i < ws2812_pwm_front.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_front, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        fade_front = true;
+        fade_time = (uint16_t)atoi(tokenizedInput[4]);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "START_FADE_ALL_BACK") == 0 && back_initialized) {
+        if (!valid_command_size(commandSize, 5)) {
+            return;
+        }
+        #if PWM
+        for (uint8_t i = 0; i < ws2812_pwm_back.led_num; i++) {
+            ws2812_set_led(&ws2812_pwm_back, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
+        }
+        fade_back = true;
+        fade_time = (uint16_t)atoi(tokenizedInput[4]);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "STOP_FADE_ALL") == 0 && initialized || (front_initialized && back_initialized)) {
+        #if PWM
+        fade_front = false;
+        fade_back = false;
+        #else
         fade_flag = 0;
+        #endif
     }
-    else if (strcmp(tokenizedInput[0], "START_FADE_SINGLE") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "STOP_FADE_FRONT") == 0 && front_initialized) {
+        #if PWM
+        fade_front = false;
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "STOP_FADE_BACK") == 0 && back_initialized) {
+        #if PWM
+        fade_back = false;
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "START_FADE_SINGLE") == 0 && initialized || (front_initialized && back_initialized)) {
         if (!valid_command_size(commandSize, 6)) {
             return;
         }
         #if SPI
         ws2812_set_led(&ws2812_spi, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        fade_flag = 1;
         #endif
         
         #if PWM
-        ws2812_set_led(&ws2812_pwm, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        fade_front = true;
+        fade_back = true;
         #endif
 
         #if GPIO
         ws2812_set_led(&ws2812_gpio, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        fade_flag = 1;
         #endif
         
         fade_time = (uint16_t)atoi(tokenizedInput[5]);
-        fade_flag = 1;
     }
-    else if (strcmp(tokenizedInput[0], "STOP_FADE_SINGLE") == 0 && initialized) {
+    else if (strcmp(tokenizedInput[0], "START_FADE_SINGLE_FRONT") == 0 && front_initialized) {
+        if (!valid_command_size(commandSize, 6)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        fade_front = true;
+        fade_time = (uint16_t)atoi(tokenizedInput[5]);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "START_FADE_SINGLE_BACK") == 0 && back_initialized) {
+        if (!valid_command_size(commandSize, 6)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]), (uint8_t)atoi(tokenizedInput[4]));
+        fade_back = true;
+        fade_time = (uint16_t)atoi(tokenizedInput[5]);
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "STOP_FADE_SINGLE") == 0 && initialized || (front_initialized && back_initialized)) {
         if (!valid_command_size(commandSize, 2)) {
             return;
         }
         #if SPI
         ws2812_set_led(&ws2812_spi, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        fade_flag = 0;
         #endif
         
         #if PWM
-        ws2812_set_led(&ws2812_pwm, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        fade_front = false;
+        fade_back = false;
         #endif
 
         #if GPIO
         ws2812_set_led(&ws2812_gpio, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        fade_flag = 0;
         #endif
     }
+    else if (strcmp(tokenizedInput[0], "STOP_FADE_SINGLE_FRONT" ) == 0 && front_initialized) {
+        if (!valid_command_size(commandSize, 2)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_front, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        fade_front = false;
+        #endif
+    }
+    else if (strcmp(tokenizedInput[0], "STOP_FADE_SINGLE_BACK" ) == 0 && back_initialized) {
+        if (!valid_command_size(commandSize, 2)) {
+            return;
+        }
+        #if PWM
+        ws2812_set_led(&ws2812_pwm_back, (uint8_t)atoi(tokenizedInput[1]), 0, 0, 0);
+        fade_back = false;
+        #endif
+    }
+
 
     token = NULL;
     memset(rxBuff, 0, RX_BUFF_SIZE);

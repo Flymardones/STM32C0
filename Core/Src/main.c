@@ -55,13 +55,19 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+#if SPI
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
+#endif
 
+#if PWM
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 DMA_HandleTypeDef hdma_tim1_ch1;
+DMA_HandleTypeDef hdma_tim3_ch1;
+#endif
 
+TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
@@ -74,9 +80,14 @@ uint8_t rxBuff[RX_BUFF_SIZE];
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
+#if SPI
 static void MX_SPI1_Init(void);
+#endif
+#if PWM
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+#endif
+static void MX_TIM14_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -91,15 +102,23 @@ ws2812_configuration ws2812_spi;
 #endif
 
 #if PWM
-ws2812_configuration ws2812_pwm;
+ws2812_configuration ws2812_pwm_front;
+ws2812_configuration ws2812_pwm_back;
+
+bool fade_front = false;
+bool fade_back = false;
 #endif
 
 #if GPIO
 ws2812_configuration ws2812_gpio;
 #endif
 
+
+
 uint8_t fade_flag = 0;
 uint16_t fade_time = 0;
+
+
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
@@ -138,7 +157,8 @@ int main(void)
 
 
   #if PWM
-  ws2812_pwm.dma = 1;
+  ws2812_pwm_front.dma = 1;
+  ws2812_pwm_back.dma = 1;
   #endif
   /* USER CODE END Init */
 
@@ -157,8 +177,10 @@ int main(void)
   #endif
   #if PWM
   MX_TIM1_Init();
-  #endif
   MX_TIM3_Init();
+  #endif
+
+  MX_TIM14_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rxBuff, RX_BUFF_SIZE);
@@ -188,8 +210,15 @@ int main(void)
 
 
     #if PWM
-      if (fade_flag) {
-        ws2812_pwm_fade(&ws2812_pwm, fade_time);
+      if (fade_front && fade_back) {
+        ws2812_pwm_fade(&ws2812_pwm_front, fade_time);
+        ws2812_pwm_fade(&ws2812_pwm_back, fade_time);
+      }
+      else if (fade_front) {
+        ws2812_pwm_fade(&ws2812_pwm_front, fade_time);
+      }
+      else if (fade_back) {
+        ws2812_pwm_fade(&ws2812_pwm_back, fade_time);
       }
       else {
         if (transferDone) { // Wait for transfer to finish before entering sleep mode
@@ -374,7 +403,7 @@ static void MX_TIM1_Init(void)
   }
   /* USER CODE BEGIN TIM1_Init 2 */
 
-  if (!ws2812_pwm.dma) {
+  if (!ws2812_pwm_front.dma) {
     TIM1->CR1 |= TIM_CR1_OPM;
     TIM1->CCER |= TIM_CCER_CC1P;
     TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE;
@@ -387,7 +416,7 @@ static void MX_TIM1_Init(void)
   HAL_TIM_MspPostInit(&htim1);
 
 }
-#endif
+
 /**
   * @brief TIM3 Initialization Function
   * @param None
@@ -402,14 +431,15 @@ static void MX_TIM3_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM3_Init 1 */
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 48 - 1;
+  htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
+  htim3.Init.Period = 60-1;;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -421,16 +451,59 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM3_Init 2 */
 
-  HAL_TIM_Base_Start(&htim3);
   /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+#endif
+/**
+  * @brief TIM14 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM14_Init(void)
+{
+
+  /* USER CODE BEGIN TIM14_Init 0 */
+
+  /* USER CODE END TIM14_Init 0 */
+
+  /* USER CODE BEGIN TIM14_Init 1 */
+
+  /* USER CODE END TIM14_Init 1 */
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 48-1;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 65535;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM14_Init 2 */
+  HAL_TIM_Base_Start(&htim14);
+  /* USER CODE END TIM14_Init 2 */
 
 }
 
