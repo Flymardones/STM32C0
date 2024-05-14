@@ -10,6 +10,12 @@
 
 #include "ws2812.h"
 
+typedef struct {
+    bool dataReceived;
+    uint16_t dataSize;
+} uart_data;
+
+
 void ws2812_uart_commands(uint8_t* data, uint16_t size);
 
 

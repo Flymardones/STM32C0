@@ -1,7 +1,7 @@
 #include "ws2812_gpio.h"
 
 
-
+#if GPIO
 static inline void ws2812_write_high() {
     GPIOA->ODR = GPIO_PIN_9;
     __asm__ volatile("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n");
@@ -140,5 +140,5 @@ void ws2812_gpio_deinit(ws2812_configuration* ws2812_conf) {
 	ws2812_conf->handle = NULL;
 	ws2812_conf->led_num = 0;
 	ws2812_conf->brightness = 0;
-	ws2812_conf->dma = 0;
 }
+#endif

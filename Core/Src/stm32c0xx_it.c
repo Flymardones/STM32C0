@@ -152,10 +152,10 @@ void DMA1_Channel1_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
 
   /* USER CODE END DMA1_Channel1_IRQn 0 */
-  #if PWM
+  #if PWM && DMA
   HAL_DMA_IRQHandler(&hdma_tim3_ch1);
   #endif
-  #if SPI
+  #if SPI && DMA
   HAL_DMA_IRQHandler(&hdma_spi1_tx);
   #endif
   /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */
@@ -171,7 +171,7 @@ void DMA1_Channel2_3_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
 
   /* USER CODE END DMA1_Channel2_3_IRQn 0 */
-  #if PWM
+  #if PWM && DMA
   HAL_DMA_IRQHandler(&hdma_tim1_ch1);
   #endif
   HAL_DMA_IRQHandler(&hdma_usart1_rx);

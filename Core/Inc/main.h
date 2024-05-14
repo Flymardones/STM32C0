@@ -64,6 +64,7 @@ void Error_Handler(void);
 #define SPI 0
 #define PWM 1
 #define GPIO 0
+#define DMA 0
 #define RX_BUFF_SIZE 128
 
 /* Peripheral handles */
@@ -75,6 +76,7 @@ extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
 extern bool fade_front;
 extern bool fade_back;
+extern bool send_both;
 #endif
 extern TIM_HandleTypeDef htim14;
 

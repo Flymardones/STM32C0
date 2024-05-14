@@ -52,11 +52,6 @@ typedef struct {
     uint8_t(*led_data)[3];
 
     /*
-    * @member dma is used for defining whether the dma should be used of not
-    */
-    uint8_t dma;
-
-    /*
     * @member circBuffer is the buffer for sending data in circular mode
     */
     uint8_t circBuffer[48];

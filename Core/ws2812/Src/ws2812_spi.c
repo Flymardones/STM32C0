@@ -91,54 +91,59 @@ void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
 		blue = blue * ws2812_conf->brightness / 100;
 	}
 
-	if (ws2812_conf->dma) {
-		uint8_t *send_data = ws2812_conf->ping_pong ? ws2812_conf->circBuffer : ws2812_conf->circBuffer + 24;
+	#if DMA
 
-		for (uint8_t i = 0; i < 8; i++) {
-			uint8_t mask = 1 << (7 - i);
-			send_data[i] = (green & mask) ? 0b110 : 0b100;
-			send_data[i + 8] = (red & mask) ? 0b110 : 0b100;
-			send_data[i + 16] = (blue & mask) ? 0b110 : 0b100;
-		}
-		ws2812_conf->ping_pong = !ws2812_conf->ping_pong;
+	uint8_t *send_data = ws2812_conf->ping_pong ? ws2812_conf->circBuffer : ws2812_conf->circBuffer + 24;
+
+	for (uint8_t i = 0; i < 8; i++) {
+		uint8_t mask = 1 << (7 - i);
+		send_data[i] = (green & mask) ? 0b110 : 0b100;
+		send_data[i + 8] = (red & mask) ? 0b110 : 0b100;
+		send_data[i + 16] = (blue & mask) ? 0b110 : 0b100;
 	}
-	else {
-		uint8_t send_data[24];
+	ws2812_conf->ping_pong = !ws2812_conf->ping_pong;
 
-		for (uint8_t i = 0; i < 8; i++) {
-			uint8_t mask = 1 << (7 - i);
-			send_data[i] = (green & mask) ? 0b110 : 0b100;
-			send_data[i + 8] = (red & mask) ? 0b110 : 0b100;
-			send_data[i + 16] = (blue & mask) ? 0b110 : 0b100;
-		}
+	#else
 
-		HAL_SPI_Transmit(ws2812_conf->handle, send_data, 24, HAL_MAX_DELAY);
+	uint8_t send_data[24];
+
+	for (uint8_t i = 0; i < 8; i++) {
+		uint8_t mask = 1 << (7 - i);
+		send_data[i] = (green & mask) ? 0b110 : 0b100;
+		send_data[i + 8] = (red & mask) ? 0b110 : 0b100;
+		send_data[i + 16] = (blue & mask) ? 0b110 : 0b100;
 	}
+
+	HAL_SPI_Transmit(ws2812_conf->handle, send_data, 24, HAL_MAX_DELAY);
+
+	#endif
 }
 
 
 void ws2812_spi_send(ws2812_configuration* ws2812_conf) {
 
-	if (ws2812_conf->dma) {
-		ws2812_conf->ping_pong = true;
+	#if DMA
 
-		// Initialise data for one transfer and start DMA in circular mode  
-		for (uint8_t i = 0; i < 2; i++) {
-			ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE]);
-		}
+	ws2812_conf->ping_pong = true;
 
-		indx = 2;
-		transferDone = 0;
-		HAL_SPI_Transmit_DMA(ws2812_conf->handle, ws2812_conf->circBuffer, 48);
+	// Initialise data for one transfer and start DMA in circular mode  
+	for (uint8_t i = 0; i < 2; i++) {
+		ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE]);
 	}
-	else {
-	
-		for (uint8_t i = 0; i < ws2812_conf->led_num; i++) {
-			ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE]);
-		}
 
-		ws2812_delay_us(280);
+	indx = 2;
+	transferDone = 0;
+	HAL_SPI_Transmit_DMA(ws2812_conf->handle, ws2812_conf->circBuffer, 48);
+
+	#else
+
+	for (uint8_t i = 0; i < ws2812_conf->led_num; i++) {
+		ws2812_spi_data(ws2812_conf, ws2812_conf->led_data[i][GREEN], ws2812_conf->led_data[i][RED], ws2812_conf->led_data[i][BLUE]);
 	}
+
+	ws2812_delay_us(280);
+
+	#endif
 }
 
 void ws2812_spi_send_burst(ws2812_configuration* ws2812_conf) {
@@ -167,13 +172,14 @@ void ws2812_spi_send_burst(ws2812_configuration* ws2812_conf) {
         }
     }
 
-    if (ws2812_conf->dma) { // Only works if DMA is set to normal mode (not circular)
-        HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, sizeof(send_data));
-		while(!__HAL_DMA_GET_FLAG(&hdma_spi1_tx, DMA_FLAG_TC1)) {};
-    }
-    else {
-        HAL_SPI_Transmit(ws2812_conf->handle, send_data, sizeof(send_data), HAL_MAX_DELAY);
-    }
+	#if DMA
+    // Only works if DMA is set to normal mode (not circular)
+	HAL_SPI_Transmit_DMA(ws2812_conf->handle, send_data, sizeof(send_data));
+	while(!__HAL_DMA_GET_FLAG(&hdma_spi1_tx, DMA_FLAG_TC1)) {};
+
+	#else
+	HAL_SPI_Transmit(ws2812_conf->handle, send_data, sizeof(send_data), HAL_MAX_DELAY);
+	#endif
 	ws2812_delay_us(280);
 }
 
@@ -207,7 +213,6 @@ void ws2812_spi_deinit(ws2812_configuration* ws2812_conf) {
 	ws2812_conf->handle = NULL;
 	ws2812_conf->led_num = 0;
 	ws2812_conf->brightness = 0;
-	ws2812_conf->dma = 0;
 }
 
 
