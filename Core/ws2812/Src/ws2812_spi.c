@@ -93,7 +93,7 @@ void ws2812_spi_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
 
 	#if DMA
 
-	uint8_t *send_data = ws2812_conf->ping_pong ? ws2812_conf->circBuffer : ws2812_conf->circBuffer + 24;
+	uint8_t *send_data = ws2812_conf->ping_pong ? &ws2812_conf->circBuffer[0] : &ws2812_conf->circBuffer[24];
 
 	for (uint8_t i = 0; i < 8; i++) {
 		uint8_t mask = 1 << (7 - i);
