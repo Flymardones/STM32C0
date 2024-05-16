@@ -64,7 +64,7 @@ void Error_Handler(void);
 #define SPI 0
 #define PWM 1
 #define GPIO 0
-#define DMA 0
+#define DMA 1
 #define RX_BUFF_SIZE 128
 
 /* Peripheral handles */

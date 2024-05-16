@@ -509,6 +509,9 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
             ws2812_set_led(&ws2812_pwm_front, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
         fade_front = true;
+        if (fade_back) {
+            send_both = true;
+        }
         fade_time = (uint16_t)atoi(tokenizedInput[4]);
         #endif
     }
@@ -521,6 +524,9 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
             ws2812_set_led(&ws2812_pwm_back, i, (uint8_t)atoi(tokenizedInput[1]), (uint8_t)atoi(tokenizedInput[2]), (uint8_t)atoi(tokenizedInput[3]));
         }
         fade_back = true;
+        if (fade_front) {
+            send_both = true;
+        }
         fade_time = (uint16_t)atoi(tokenizedInput[4]);
         #endif
     }
