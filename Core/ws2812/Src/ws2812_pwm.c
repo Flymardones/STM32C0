@@ -194,9 +194,9 @@ void ws2812_pwm_data(ws2812_configuration* ws2812_conf, uint8_t green, uint8_t r
     
     for (uint8_t i = 0; i < 8; i++) {
         uint8_t mask = 1 << (7 - i);
-        send_data[i] = (green & mask) ? 20 : 44;
-        send_data[i + 8] = (red & mask) ? 20 : 44;
-        send_data[i + 16] = (blue & mask) ? 20 : 44;
+        send_data[i] = (green & mask) ? 24 : 44;
+        send_data[i + 8] = (red & mask) ? 24 : 44;
+        send_data[i + 16] = (blue & mask) ? 24 : 44;
     }
 
     TIM_HandleTypeDef* handle = (TIM_HandleTypeDef *) ws2812_conf->handle;
