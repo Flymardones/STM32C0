@@ -102,6 +102,7 @@ static void MX_USART1_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+#define TEST 0
 
 #if SPI
 ws2812_configuration ws2812_spi;
@@ -134,6 +135,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
     // Check if this is the UART peripheral we're interested in
     if (huart == &huart1) {
+      HAL_ResumeTick();
       uartData.dataReceived = true;
       uartData.dataSize = Size;
       HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rxBuff, RX_BUFF_SIZE);
@@ -187,7 +189,15 @@ int main(void)
   HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rxBuff, RX_BUFF_SIZE);
   __HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
   /* USER CODE END 2 */
-
+  #if TEST
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  #endif
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
@@ -203,6 +213,7 @@ int main(void)
       }
       else {
         if (transferDone) { // Wait for transfer to finish before entering sleep mode
+          HAL_SuspendTick();
           HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
         }
       }
@@ -225,6 +236,7 @@ int main(void)
           if (send_both) {
             send_both = false;
           }
+          HAL_SuspendTick();
           HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
         }
       }
@@ -236,6 +248,7 @@ int main(void)
       }
       else {
         if (transferDone) { // Wait for transfer to finish before entering sleep mode
+          HAL_SuspendTick();
           HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
         }
       }
