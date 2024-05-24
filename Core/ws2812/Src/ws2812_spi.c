@@ -21,8 +21,8 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 			ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE]);
 			indx++;
 		}
-		else if (indx < ws2812_spi.led_num + 5) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
-			for (uint8_t i = 24; i < 48; i++) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
+		else if (indx < ws2812_spi.led_num + 3) { // Reset pulse (48 bits * 2.66 us = 128 us * 3 = 384 us)
+			for (uint8_t i = 24; i < 48; i++) { 
 				ws2812_spi.circBuffer[i] = 0;
 			}
 			indx++;
@@ -44,7 +44,7 @@ void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi) {
 			ws2812_spi_data(&ws2812_spi, ws2812_spi.led_data[indx][GREEN], ws2812_spi.led_data[indx][RED], ws2812_spi.led_data[indx][BLUE]);
 			indx++;
 		}
-		else if (indx < ws2812_spi.led_num + 5) { // Reset pulse (48 bits * 1.25 us = 60 us * 5 = 300 us)
+		else if (indx < ws2812_spi.led_num + 3) { // Reset pulse (48 bits * 2.66 us = 128 us * 3 = 384 us)
 	        for (uint8_t i = 0; i < 24; i++) {
             	ws2812_spi.circBuffer[i] = 0;
         	}
