@@ -207,6 +207,7 @@ void ws2812_uart_commands(uint8_t* data, uint16_t size) {
 
         #if DMA
         send_both = true;
+        memset(ws2812_pwm_back.led_data, 0, ws2812_pwm_back.led_num * sizeof(*ws2812_pwm_back.led_data));
         ws2812_pwm_clear(&ws2812_pwm_front);
         #else
         ws2812_pwm_clear(&ws2812_pwm_front);
